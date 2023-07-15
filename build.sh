@@ -44,8 +44,8 @@ build_llbc() {
 # build libco lib function
 build_libco() {
     echo "Building libco"
-    # git submodule init 
-    # git submodule update
+    git submodule init 
+    git submodule update
     cd $LIBCO_PATH
     cmake .
     make -j15
@@ -84,13 +84,13 @@ elif [[ ${1} == "llbc" ]]; then
 elif [[ ${1} == "rebuild" ]]; then 
     re_build_rpc
     exit 0
-elif [[ ${1} == "libco" ]]; then 
-    build_libco
-    exit 0
+# elif [[ ${1} == "libco" ]]; then 
+#     build_libco
+#     exit 0
 elif [[ ${1} == "all" ]]; then 
     build_protobuf
     build_llbc
-    build_libco
+    # build_libco
     re_build_rpc
     exit 0
 elif [[ ! -n "$1" ]]; then 
