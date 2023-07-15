@@ -88,6 +88,7 @@ elif [[ ${1} == "libco" ]]; then
 elif [[ ${1} == "all" ]]; then 
     build_protobuf
     build_llbc
+    build_libco
     re_build_rpc
     exit 0
 elif [[ ! -n "$1" ]]; then 
