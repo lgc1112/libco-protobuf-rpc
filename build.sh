@@ -47,7 +47,7 @@ build_libco() {
     git submodule init 
     git submodule update
     cd $LIBCO_PATH
-    cmake .
+    # cmake .
     make -j15
     echo "Building libco done"
     cd -
