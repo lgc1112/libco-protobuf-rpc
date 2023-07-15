@@ -5,4 +5,3 @@ rpc/bin
 rpc/pb/*.pb.cc
 rpc/pb/*.pb.h
 log/client/client.230715.log
-libco
