@@ -1,3 +1,0 @@
-[submodule "libco"]
-	path = libco
-	url = git@github.com:Tencent/libco.git

@@ -47,6 +47,7 @@ build_libco() {
     # git submodule init 
     # git submodule update
     cd $LIBCO_PATH
+    cmake .
     make -j15
     echo "Building libco done"
     cd -
@@ -56,7 +57,6 @@ build_libco() {
 build_rpc() {
     echo "Building rpc"
     # gen pb
-    export LD_LIBRARY_PATH="${PROTO_LIB_PATH}:${LD_LIBRARY_PATH}"
     (cd $RPC_PATH/pb && $PROTOC_PATH  *.proto --cpp_out=. )
 
     mkdir -p ${BUILD_PATH} && cd ${BUILD_PATH}
