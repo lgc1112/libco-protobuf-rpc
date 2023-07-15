@@ -11,10 +11,10 @@
 PROJ_ROOT="$(cd "`dirname "$0"`" && pwd)"
 PROTO_PATH="${PROJ_ROOT}/protobuf-3.20.0"
 LLBC_PATH="${PROJ_ROOT}/llbc"
+LIBCO_PATH="${PROJ_ROOT}/libco"
 PROTO_SRC_PATH="${PROTO_PATH}/src"
 PROTO_LIB_PATH="${PROTO_SRC_PATH}/lib"
 PROTOC_PATH="${PROTO_SRC_PATH}/protoc"
-LLBC_PATH="${PROJ_ROOT}/llbc"
 RPC_PATH="${PROJ_ROOT}/rpc"
 BUILD_PATH="./build/"
 
@@ -38,6 +38,15 @@ build_llbc() {
     cd $LLBC_PATH
     make core_lib -j15
     echo "Building llbc done"
+    cd -
+}
+
+# build libco lib function
+build_libco() {
+    echo "Building libco"
+    cd $LIBCO_PATH
+    make -j15
+    echo "Building libco done"
     cd -
 }
 
@@ -72,6 +81,9 @@ elif [[ ${1} == "llbc" ]]; then
     exit 0
 elif [[ ${1} == "rebuild" ]]; then 
     re_build_rpc
+    exit 0
+elif [[ ${1} == "libco" ]]; then 
+    build_libco
     exit 0
 elif [[ ${1} == "all" ]]; then 
     build_protobuf
