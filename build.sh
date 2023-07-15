@@ -44,8 +44,8 @@ build_llbc() {
 # build libco lib function
 build_libco() {
     echo "Building libco"
-    # git submodule update --init --recursive
-    # git submodule update --recursive
+    # git submodule init 
+    # git submodule update
     cd $LIBCO_PATH
     make -j15
     echo "Building libco done"
