@@ -36,19 +36,18 @@ int main() {
     }
 
     // 初始化连接管理器
-    ConnMgr *connMgr = s_ConnMgr;
-    ret = connMgr->Init();
+    ret = s_ConnMgr->Init();
     if (ret != LLBC_OK) {
         LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Initialize connMgr failed, error:%s", LLBC_FormatLastError());
         return -1;
     }
 
     // 创建rpc channel
-    RpcChannel *channel = connMgr->GetRpcChannel("127.0.0.1", 6688);
+    RpcChannel *channel = s_ConnMgr->GetRpcChannel("127.0.0.1", 6688);
     LLBC_Defer(delete channel);
 
     if (!channel) {
-        LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "GetRpcChannel Fail");
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "GetRpcChannel Fail");
         return -1;
     }
 
@@ -65,7 +64,7 @@ int main() {
 
     s_RpcCoroMgr->Init();
     LLBC_Defer(s_RpcCoroMgr->Stop());
-    RpcMgr serviceMgr(connMgr);
+    RpcMgr serviceMgr(s_ConnMgr);
 
     // 创建协程并Resume
     auto func = [&cntl, &req, &rsp, &channel, &stub](void *){

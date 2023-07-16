@@ -34,6 +34,8 @@ add_executable(client ${PB_FILES} ${SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/c
 target_link_libraries(client libprotobuf.a  libllbc.so libcolib.so)
 add_executable(server ${PB_FILES} ${SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/server/server.cpp)
 target_link_libraries(server libprotobuf.a libllbc.so libcolib.so)
+add_executable(server2 ${PB_FILES} ${SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/server/server2.cpp)
+target_link_libraries(server2 libprotobuf.a libllbc.so libcolib.so)
 # add_executable(server2 ${PB_FILES} ${SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/server/server2.cpp)
 # target_link_libraries(server2 libprotobuf.a libllbc.so libcolib.so)
 

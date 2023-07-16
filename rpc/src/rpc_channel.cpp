@@ -21,6 +21,8 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
                             ::google::protobuf::RpcController *controller,
                             const ::google::protobuf::Message *request, ::google::protobuf::Message *response,
                             ::google::protobuf::Closure *) {
+    response->Clear();
+
     // 协程方案, 不允许在主协程中call Rpc
     auto coro = s_RpcCoroMgr->GetCurCoro();
     if (coro->IsMainCoro()) {
@@ -58,14 +60,32 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
         return;
     }
 
+
     // 没有出错的情况，从协程获取接收到的回包
     LLBC_Packet *recvPacket = reinterpret_cast<LLBC_Packet *>(coro->GetPtrParam1());
     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "PayLoad:%s", recvPacket->ToString().c_str());
+
+    std::string errText;
+    if (recvPacket->Read(errText) != LLBC_OK)
+    {
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Read errText fail");
+        controller->SetFailed("Read errText fail");
+        return;
+    }
+
     if (recvPacket->Read(*response) != LLBC_OK)
     {
         LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Read recvPacket fail");
+        controller->SetFailed("Read recvPacket fail");
         return;
     }
+
+    if (!errText.empty())
+    {
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Recv errText: %s", errText.c_str());
+        controller->SetFailed(errText);
+    }
+
     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Recved: %s", response->DebugString().c_str());
 
 }

@@ -15,17 +15,26 @@
 #include "google/protobuf/service.h"
 #include "google/protobuf/stubs/common.h"
 class ConnMgr;
+
 class RpcController : public ::google::protobuf::RpcController {
 public:
-    virtual void Reset(){};
+  virtual void Reset(){};
 
-    virtual bool Failed() const { return false; };
-    virtual std::string ErrorText() const { return ""; };
-    virtual void StartCancel(){};
-    virtual void SetFailed(const std::string & /* reason */){};
-    virtual bool IsCanceled() const { return false; };
-    virtual void NotifyOnCancel(::google::protobuf::Closure * /* callback */){};
+  virtual bool Failed() const { return isFailed_; };
+  virtual std::string ErrorText() const { return errorText_; };
+  virtual void StartCancel(){};
+  virtual void SetFailed(const std::string &reason) {
+    isFailed_ = true;
+    errorText_ = reason;
+  };
+  virtual bool IsCanceled() const { return false; };
+  virtual void NotifyOnCancel(::google::protobuf::Closure * /* callback */){};
+
+private:
+  bool isFailed_ = false;
+  std::string errorText_;
 };
+
 
 class RpcChannel : public ::google::protobuf::RpcChannel {
 public:

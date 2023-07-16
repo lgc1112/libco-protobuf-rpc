@@ -23,7 +23,7 @@ RpcMgr::~RpcMgr() {
     connMgr_->Unsubscribe(RpcOpCode::RpcRsp);
 }
 
-void RpcMgr::AddService(::google::protobuf::Service *service) {
+void RpcMgr::AddService(google::protobuf::Service *service) {
     ServiceInfo service_info;
     service_info.service = service;
     service_info.sd = service->GetDescriptor();
@@ -65,7 +65,7 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
         RpcController controller;
         // 创建rpc完成回调函数
         service->CallMethod(md, &controller, req, rsp, nullptr);
-        OnRpcDone(req, rsp, 0);
+        OnRpcDone(controller, req, rsp);
         delete req;
         delete rsp;
     };
@@ -78,7 +78,6 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
 
 void RpcMgr::HandleRpcRsp(LLBC_Packet &packet) {
     uint64 dstCoroId = 0;
-    // LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "dstCoroId:%llu, packet:%s", dstCoroId, packet.ToString().c_str());
     packet.Read(dstCoroId);
     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "dstCoroId:%llu, packet:%s", dstCoroId, packet.ToString().c_str());
     Coro *coro = s_RpcCoroMgr->GetCoro(dstCoroId);
@@ -91,7 +90,7 @@ void RpcMgr::HandleRpcRsp(LLBC_Packet &packet) {
     }
 }
 
-void RpcMgr::OnRpcDone(::google::protobuf::Message *req, ::google::protobuf::Message *rsp, int sessionId) {
+void RpcMgr::OnRpcDone(RpcController &controller, google::protobuf::Message *req, google::protobuf::Message *rsp) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "OnRpcDone, req:%s, rsp:%s", req->DebugString().c_str(),
          rsp->DebugString().c_str());
     // 协程方案
@@ -103,6 +102,7 @@ void RpcMgr::OnRpcDone(::google::protobuf::Message *req, ::google::protobuf::Mes
     packet->SetSessionId(coroSessionId);
     packet->SetOpcode(RpcOpCode::RpcRsp);
     packet->Write(srcCoroId);
+    packet->Write(controller.ErrorText());
     packet->Write(*rsp);
     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "rsp packet:%s", packet->ToString().c_str());
     // 回包

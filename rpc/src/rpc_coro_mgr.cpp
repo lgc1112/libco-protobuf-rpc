@@ -129,7 +129,7 @@ int Coro::Yield(const LLBC_TimeSpan &timeout)
 
     // 自增yield次数 并 Log
     ++yieldTimes_;
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Yield coro:%d, yield times:%lu, timeout:%d.%03d secs",
+    LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Yield coro:%d, yield times:%lu, timeout:%d.%03d secs",
                  coroId_, yieldTimes_, actualTimeout.GetTotalSeconds(), actualTimeout.GetMilliSeconds());
 
     // 调用Timer
