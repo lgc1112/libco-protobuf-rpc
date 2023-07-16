@@ -16,19 +16,6 @@ void signalHandler(int signum) {
     stop = true;
 }
 
-// int main() 
-// {
-//     echo::EchoRequest req;
-//     req.set_msg("hello, myrpc.");
-//     echo::EchoRequest req2;
-//     LLBC_Packet packet;
-//     packet.Write(req);
-//     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "req: %s", req.DebugString().c_str());
-//     packet.Read(req2);
-//     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "req2: %s", req2.DebugString().c_str());
-//     return 0;
-// }
-
 int main() {
     // 注册信号 SIGINT 和信号处理程序
     signal(SIGINT, signalHandler);
@@ -57,11 +44,11 @@ int main() {
     }
 
     // 创建rpc channel
-    RpcChannel *channel = connMgr->CreateRpcChannel("127.0.0.1", 6688);
+    RpcChannel *channel = connMgr->GetRpcChannel("127.0.0.1", 6688);
     LLBC_Defer(delete channel);
 
     if (!channel) {
-        LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "CreateRpcChannel Fail");
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "GetRpcChannel Fail");
         return -1;
     }
 
@@ -76,53 +63,49 @@ int main() {
     MyController cntl;
     echo::EchoService_Stub stub(channel);
 
-#ifdef EnableCoroRpc
-    g_rpcCoroMgr->Init();
-    LLBC_Defer(g_rpcCoroMgr->Stop());
-    RpcServiceMgr serviceMgr(connMgr);
+    s_RpcCoroMgr->Init();
+    LLBC_Defer(s_RpcCoroMgr->Stop());
+    RpcMgr serviceMgr(connMgr);
 
     // 创建协程并Resume
     auto func = [&cntl, &req, &rsp, &channel, &stub](void *){
-        rsp.Clear();
+
+        req.set_msg("Hello, Echo.");
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Rpc Echo Call, msg:%s",
+            req.msg().c_str());
+        // 调用生成的rpc方法Echo,然后挂起协程等待返回
         stub.Echo(&cntl, &req, &rsp, nullptr);
-        LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "RECEIVED RSP: %s", rsp.msg().c_str());
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Recv Echo Rsp, status:%s, rsp:%s", cntl.Failed() ? cntl.ErrorText().c_str() : "success", 
+            rsp.msg().c_str());
+
+
+        req.set_msg("Hello, RelayEcho.");
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Rpc RelayEcho Call, msg:%s",
+            req.msg().c_str());
+        // 调用生成的rpc方法RelayEcho,然后挂起协程等待返回
+        stub.RelayEcho(&cntl, &req, &rsp, nullptr);
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Recv RelayEcho Rsp, status:%s, rsp:%s", cntl.Failed() ? cntl.ErrorText().c_str() : "success", 
+        rsp.msg().c_str());
     };
 
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     auto coro = g_rpcCoroMgr->CreateCoro(func, nullptr);
-    //     coro->Resume();
-    // }
-
-    // 死循环处理 rpc 请求
+    // 主循环处理 rpc 请求
     int count = 0;
     while (!stop) {
-        // tick 处理接收到的 rpc req和rsp
-        // 若有rsp，Tick内部会调用Rsp处理函数，从而唤醒对应休眠的协程
-        g_rpcCoroMgr->Update();
-        auto isBusy = connMgr->Tick();
+        // 更新协程管理器，处理超时协程
+        s_RpcCoroMgr->Update();
+        // 更新连接管理器，处理接收到的rpc req和rsp
+        auto isBusy = s_ConnMgr->Tick();
         if (!isBusy) {
             LLBC_Sleep(1);
             ++count;
-            // 满1s就创建一个新协协程发一个包
+            // 满1s就创建一个新协协程发rpc包
             if (count == 1000)
             {
                 count = 0;
-                auto coro = g_rpcCoroMgr->CreateCoro(func, nullptr);
-                coro->Resume();
+                s_RpcCoroMgr->CreateCoro(func, nullptr)->Resume();
             }
         }
     }
-
-#else
-    // 直接调用方案
-    while (!stop) {
-        stub.Echo(&cntl, &req, &rsp, nullptr);
-        // std::cout << "resp:" << response.msg() << std::endl;
-        LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "recv rsp:%s", rsp.msg().c_str());
-        LLBC_Sleep(1000);
-    }
-#endif
 
     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "client Stop");
 

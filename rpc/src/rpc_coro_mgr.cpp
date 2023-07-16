@@ -10,7 +10,7 @@
 #include "rpc_coro_mgr.h"
 
 // // 用协程管理器单例，TODO: 用单例实现较好
-// BaseRpcCoroMgr *g_rpcCoroMgr = nullptr;
+// BaseRpcCoroMgr *s_RpcCoroMgr = nullptr;
 
 
 using namespace llbc;

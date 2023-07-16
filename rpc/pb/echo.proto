@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package echo;
 
+
 option cc_generic_services = true;
 
 message EchoRequest {
@@ -12,6 +13,16 @@ message EchoResponse {
     optional string msg = 2;
 }
 
+
+message GetDataReq {
+    optional string msg = 1;
+}
+message GetDataRsp {
+    optional string msg = 1;
+}
+
 service EchoService {
     rpc Echo(EchoRequest) returns (EchoResponse);
+    rpc RelayEcho(EchoRequest) returns (EchoResponse);
+    rpc GetData(GetDataReq) returns (GetDataRsp);
 }

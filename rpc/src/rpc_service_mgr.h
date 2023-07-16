@@ -19,15 +19,11 @@ namespace llbc
 }
 
 class ConnMgr;
-class RpcServiceMgr {
+class RpcMgr {
 public:
-    RpcServiceMgr(ConnMgr *connMgr);
-    virtual ~RpcServiceMgr();
-
-    // // 初始化
-    // int Init();
-    // // 更新，弃用
-    // void OnUpdate();
+    RpcMgr(ConnMgr *connMgr);
+    virtual ~RpcMgr();
+    
     // 添加服务
     void AddService(::google::protobuf::Service *service);
 
@@ -37,22 +33,15 @@ private:
     void HandleRpcRsp(llbc::LLBC_Packet &packet);
     // 处理RPC处理结束
     void OnRpcDone(::google::protobuf::Message *recv_msg, ::google::protobuf::Message *resp_msg, int sessionId);
-    // void dispatch_msg(
-    //         const std::string& service_name,
-    //         const std::string& method_name,
-    //         const std::string& serialzied_data);
-    // void pack_message(
-    //         const ::google::protobuf::Message* msg,
-    //         std::string* serialized_data);
-
+    
 private:
     struct ServiceInfo {
         ::google::protobuf::Service *service;
         const ::google::protobuf::ServiceDescriptor *sd;
         std::map<std::string, const ::google::protobuf::MethodDescriptor *> mds;
-    };  // ServiceInfo
+    };
 
     std::map<std::string, ServiceInfo> _services;
     ConnMgr *connMgr_ = nullptr;
     bool stop_ = false;
-};  // RpcServiceMgr
+};
