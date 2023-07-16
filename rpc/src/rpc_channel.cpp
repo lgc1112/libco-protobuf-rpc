@@ -18,7 +18,7 @@ RpcChannel::~RpcChannel() {
 }
 
 void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
-                            ::google::protobuf::RpcController * /* controller */,
+                            ::google::protobuf::RpcController *controller,
                             const ::google::protobuf::Message *request, ::google::protobuf::Message *response,
                             ::google::protobuf::Closure *) {
     // 协程方案, 不允许在主协程中call Rpc
@@ -41,9 +41,24 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
     connMgr_->PushPacket(sendPacket);
     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Waiting!");
 
-// 协程方案
     coro->Yield();  // yield当前协程，直到收到回包
-    // 协程被唤醒时，从协程获取接收到的回包
+
+
+    // 协程被唤醒时，判断协程是否超时或者被取消
+    if (coro->IsTimeouted())
+    {
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Coro %d timeouted", coro->GetId());
+        controller->SetFailed("Coro timeouted");
+        return;
+    }
+    else if(coro->IsCancelled())
+    {
+        LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Coro %d cancelled", coro->GetId());
+        controller->SetFailed("Coro cancelled");
+        return;
+    }
+
+    // 没有出错的情况，从协程获取接收到的回包
     LLBC_Packet *recvPacket = reinterpret_cast<LLBC_Packet *>(coro->GetPtrParam1());
     LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "PayLoad:%s", recvPacket->ToString().c_str());
     if (recvPacket->Read(*response) != LLBC_OK)

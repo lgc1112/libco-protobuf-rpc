@@ -18,13 +18,15 @@ using namespace llbc;
 Coro::Coro(RpcCoroMgr *coMgr,
            int coroId,
            const CoroEntry &entry,
-           void *args)
+           void *args,
+           llbc::LLBC_TimerScheduler *timerScheduler)
 : coroId_(coroId)
 , coMgr_(coMgr)
 
 , innerCoro_(nullptr)
 , entry_(entry)
 , args_(args)
+, timer_(nullptr, nullptr, timerScheduler)
 
 , yielded_(false)
 , timeouted_(false)
@@ -123,7 +125,7 @@ int Coro::Yield(const LLBC_TimeSpan &timeout)
     // 记录开始挂起时间
     const auto begYieldTime = LLBC_RdTsc();
     const auto actualTimeout = timeout <= LLBC_TimeSpan::zero ? 
-        LLBC_TimeSpan::FromSeconds(60) : timeout; // 超时时间
+        LLBC_TimeSpan::FromMillis(CoroTimeoutTime) : timeout; // 超时时间
 
     // 自增yield次数 并 Log
     ++yieldTimes_;
@@ -266,7 +268,7 @@ Coro *RpcCoroMgr::CreateCoro(const CoroEntry &entry, void *args, size_t stackSiz
 {
     auto coroId = GenCoroId();
 
-    auto coro = new Coro(this, coroId, entry, args);
+    auto coro = new Coro(this, coroId, entry, args, &timerScheduler_);
 
     stCoRoutine_t *innerCoro;
     stCoRoutineAttr_t coroAttr;
@@ -317,24 +319,6 @@ int RpcCoroMgr::Cancel(int coroId)
 
 bool RpcCoroMgr::Init()
 {
-    // // 初始化maxCoroId_
-    // maxCoroId_ = 0;
-
-    // // 获取libco主协程对象
-    // auto mainInnerCoro = co_self();
-    // if (!mainInnerCoro->cIsMain)
-    // {
-    //     LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Not allow start component in non-main coro");
-    //     return false;
-    // }
-    // // 创建包装主协程对象
-    // const auto coroId = GenCoroId();
-    // auto mainCoro = new Coro(this, coroId, nullptr, nullptr);
-    // memcpy(&mainInnerCoro->aSpec[0].value, &coroId, sizeof(coroId));
-    // mainCoro->SetInnerCoro(mainInnerCoro);
-
-    // // 添加到协程集
-    // coros_.emplace(coroId, mainCoro);
 
     // Log
     LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Start");
@@ -366,6 +350,8 @@ void RpcCoroMgr::Stop()
 
 void RpcCoroMgr::Update()
 {
+    timerScheduler_.Update();
+
     if (waitingForRecycleCoros_.empty())
         return;
 

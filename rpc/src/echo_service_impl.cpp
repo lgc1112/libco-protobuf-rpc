@@ -16,7 +16,7 @@ void MyEchoService::Echo(::google::protobuf::RpcController * /* controller */, c
                          ::echo::EchoResponse *response, ::google::protobuf::Closure *done) {
   LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "received, msg:%s",
        request->msg().c_str());
-  // LLBC_Sleep(5000);
+  LLBC_Sleep(5000);
   response->set_msg(std::string(" Echo >>>>>>> ") + request->msg());
 }
 

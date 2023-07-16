@@ -4,3 +4,4 @@ build
 rpc/bin
 rpc/pb/*.pb.cc
 rpc/pb/*.pb.h
+core.*

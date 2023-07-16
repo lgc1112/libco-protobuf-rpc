@@ -16,6 +16,7 @@ class RpcCoroMgr;
 
 // Coro Entry定义
 typedef llbc::LLBC_Delegate<void(void *)> CoroEntry;
+#define CoroTimeoutTime 5000 // milli seconds
 
 // Coro对象包装
 #pragma pack(push, 1)
@@ -25,7 +26,8 @@ public:
     Coro(RpcCoroMgr *coMgr,
          int coroId,
          const CoroEntry &entry,
-         void *args);
+         void *args,
+         llbc::LLBC_TimerScheduler *timerScheduler);
     ~Coro();
 
 public:
@@ -143,6 +145,7 @@ private:
     int maxCoroId_;
     std::map<int, Coro *> coros_;
     std::map<int, Coro *>waitingForRecycleCoros_;
+    llbc::LLBC_TimerScheduler timerScheduler_;
 };
 
 #define s_RpcCoroMgr ::llbc::LLBC_Singleton<RpcCoroMgr>::Instance()
