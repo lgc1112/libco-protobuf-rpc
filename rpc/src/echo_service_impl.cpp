@@ -43,7 +43,7 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
        innerReq.msg().c_str());
 
     // 创建rpc controller & stub
-    MyController cntl;
+    RpcController cntl;
     echo::EchoService_Stub stub(channel);
 
     stub.Echo(&cntl, &innerReq, &innerRsp, nullptr);

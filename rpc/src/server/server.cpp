@@ -11,7 +11,7 @@
 #include "echo_service_impl.h"
 #include "llbc.h"
 #include "rpc_channel.h"
-#include "rpc_service_mgr.h"
+#include "rpc_mgr.h"
 #include "rpc_coro_mgr.h"
 
 using namespace llbc;

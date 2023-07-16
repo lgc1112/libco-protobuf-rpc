@@ -15,7 +15,7 @@
 #include "google/protobuf/service.h"
 #include "google/protobuf/stubs/common.h"
 class ConnMgr;
-class MyController : public ::google::protobuf::RpcController {
+class RpcController : public ::google::protobuf::RpcController {
 public:
     virtual void Reset(){};
 

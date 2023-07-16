@@ -6,7 +6,7 @@
  * @edit: regangcli
  * @brief:
  */
-#include "rpc_service_mgr.h"
+#include "rpc_mgr.h"
 #include "conn_mgr.h"
 #include "rpc_channel.h"
 #include "rpc_coro_mgr.h"
@@ -62,7 +62,7 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
 
     // TODO: 协程方案, 在新协程中处理rpc请求
     auto func = [packet, service, md, req, rsp, this](void *) {
-        MyController controller;
+        RpcController controller;
         // 创建rpc完成回调函数
         service->CallMethod(md, &controller, req, rsp, nullptr);
         OnRpcDone(req, rsp, 0);

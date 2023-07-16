@@ -5,7 +5,7 @@
 #include "llbc.h"
 #include "rpc_channel.h"
 #include "rpc_coro_mgr.h"
-#include "rpc_service_mgr.h"
+#include "rpc_mgr.h"
 
 using namespace llbc;
 
@@ -60,7 +60,7 @@ int main() {
     req.set_msg("hello, myrpc.");
 
     // 创建rpc controller & stub
-    MyController cntl;
+    RpcController cntl;
     echo::EchoService_Stub stub(channel);
 
     s_RpcCoroMgr->Init();
