@@ -32,8 +32,7 @@ private:
   void HandleRpcReq(llbc::LLBC_Packet &packet);
   void HandleRpcRsp(llbc::LLBC_Packet &packet);
   // 处理RPC处理结束
-  void OnRpcDone(RpcController &controller, google::protobuf::Message *req,
-                 google::protobuf::Message *rsp);
+  void OnRpcDone(RpcController &controller, google::protobuf::Message *rsp, int sessionId, int srcCoroId);
 
 private:
   struct ServiceInfo {

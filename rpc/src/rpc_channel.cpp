@@ -37,7 +37,7 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
   sendPacket->Write(method->service()->name());
   sendPacket->Write(method->name());
 
-  sendPacket->Write(uint64(s_RpcCoroMgr->GetCurCoroId()));
+  sendPacket->Write(s_RpcCoroMgr->GetCurCoroId());
   sendPacket->Write(*request);
 
   connMgr_->PushPacket(sendPacket);

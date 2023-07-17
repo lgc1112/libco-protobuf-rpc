@@ -33,7 +33,8 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
   echo::EchoRequest innerReq;
   innerReq.set_msg("Relay Call >>>>>>" + req->msg());
   echo::EchoResponse innerRsp;
-  // 创建 rpc channel
+  
+  // 创建 or 获取 rpc channel
   RpcChannel *channel = s_ConnMgr->GetRpcChannel("127.0.0.1", 6688);
   if (!channel) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "GetRpcChannel Fail");

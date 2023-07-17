@@ -2,7 +2,7 @@
  * @Author: ligengchao ligengchao@pku.edu.cn
  * @Date: 2023-07-16 14:27:21
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-07-17 22:10:30
+ * @LastEditTime: 2023-07-17 22:17:47
  * @FilePath: /projects/libco-protobuf-rpc/rpc/src/server/server.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -53,7 +53,7 @@ int main() {
     return -1;
   }
 
-  // 创建 or 获取rpc channel
+  // 1.获取 or 创建rpc channel
   RpcChannel *channel = s_ConnMgr->GetRpcChannel("127.0.0.1", 6688);
   LLBC_Defer(delete channel);
 
@@ -67,7 +67,6 @@ int main() {
   // 创建rpc req & resp
   echo::EchoRequest req;
   echo::EchoResponse rsp;
-  req.set_msg("hello, myrpc.");
 
   // 创建rpc controller & stub
   RpcController cntl;

@@ -39,7 +39,7 @@ void RpcMgr::AddService(google::protobuf::Service *service) {
 
 void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
   // 读取serviceName&methodName
-  llbc::uint64 srcCoroId;
+  int srcCoroId;
   std::string serviceName, methodName;
   if (packet.Read(serviceName) != LLBC_OK ||
       packet.Read(methodName) != LLBC_OK || packet.Read(srcCoroId) != LLBC_OK) {
@@ -53,7 +53,7 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
        serviceName.c_str());
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "recv method_name:%s",
        methodName.c_str());
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "srcCoroId:%llu", srcCoroId);
+  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "srcCoroId:%d", srcCoroId);
 
   // 解析req&创建rsp
   auto req = service->GetRequestPrototype(md).New();
@@ -63,32 +63,31 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
     return;
   }
   auto rsp = service->GetResponsePrototype(md).New();
-
-  // TODO: 协程方案, 在新协程中处理rpc请求
-  auto func = [packet, service, md, req, rsp, this](void *) {
+  auto sessionId = packet.GetSessionId();
+  
+  // 协程方案, 在新协程中处理rpc请求
+  auto func = [packet, service, md, req, rsp, sessionId, srcCoroId, this](void *) {
     RpcController controller;
     // 创建rpc完成回调函数
     service->CallMethod(md, &controller, req, rsp, nullptr);
-    OnRpcDone(controller, req, rsp);
+    OnRpcDone(controller, rsp, sessionId, srcCoroId);
     delete req;
     delete rsp;
   };
   Coro *coro = s_RpcCoroMgr->CreateCoro(func, nullptr);
-  coro->SetParam1(packet.GetSessionId());
-  coro->SetParam2(srcCoroId);
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "SessionId:%d, srcCoroId:%llu",
+  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "SessionId:%d, srcCoroId:%d",
        packet.GetSessionId(), srcCoroId);
   coro->Resume(); // 启动协程，如协程内部有内嵌发起rpc请求，会在协程内部发起请求后，直接回到此处
 }
 
 void RpcMgr::HandleRpcRsp(LLBC_Packet &packet) {
-  uint64 dstCoroId = 0;
+  int dstCoroId = 0;
   packet.Read(dstCoroId);
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "dstCoroId:%llu, packet:%s",
+  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "dstCoroId:%d, packet:%s",
        dstCoroId, packet.ToString().c_str());
   Coro *coro = s_RpcCoroMgr->GetCoro(dstCoroId);
   if (!coro) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "coro not found, coroId:%llu",
+    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "coro not found, coroId:%d",
          dstCoroId);
   } else {
     coro->SetPtrParam1(&packet);
@@ -97,18 +96,14 @@ void RpcMgr::HandleRpcRsp(LLBC_Packet &packet) {
 }
 
 void RpcMgr::OnRpcDone(RpcController &controller,
-                       google::protobuf::Message *req,
-                       google::protobuf::Message *rsp) {
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "OnRpcDone, req:%s, rsp:%s",
-       req->DebugString().c_str(), rsp->DebugString().c_str());
-  // 协程方案
-  auto coro = s_RpcCoroMgr->GetCurCoro();
-  auto coroSessionId = coro->GetParam1();
-  auto srcCoroId = coro->GetParam2();
+                       google::protobuf::Message *rsp, int sessionId, int srcCoroId) {
+  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "OnRpcDone, rsp:%s",
+       rsp->DebugString().c_str());
+
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
-       "coroSessionId:%llu, srcCoroId:%llu", coroSessionId, srcCoroId);
+       "coroSessionId:%d, srcCoroId:%d", sessionId, srcCoroId);
   auto packet = LLBC_GetObjectFromUnsafetyPool<LLBC_Packet>();
-  packet->SetSessionId(coroSessionId);
+  packet->SetSessionId(sessionId);
   packet->SetOpcode(RpcOpCode::RpcRsp);
   packet->Write(srcCoroId);
   packet->Write(controller.ErrorText());
