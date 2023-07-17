@@ -1,7 +1,7 @@
 /*
  * @file:
  * @Author: ligengchao
- * @copyright: Tencent Technology (Shenzhen) Company Limited
+
  * @Date: 2023-06-20 20:13:23
  * @edit: ligengchao
  * @brief:

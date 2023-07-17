@@ -1,7 +1,7 @@
 /*
  * @file:
  * @Author: regangcli
- * @copyright: Tencent Technology (Shenzhen) Company Limited
+
  * @Date: 2023-06-19 20:13:51
  * @edit: regangcli
  * @brief:
