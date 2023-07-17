@@ -1,9 +1,9 @@
 /*
  * @file:
- * @Author: regangcli
+ * @Author: ligengchao
  * @copyright: Tencent Technology (Shenzhen) Company Limited
  * @Date: 2023-06-21 15:46:03
- * @edit: regangcli
+ * @edit: ligengchao
  * @brief:
  */
 #pragma once
@@ -16,8 +16,9 @@ public:
             const ::echo::EchoRequest *request, ::echo::EchoResponse *response,
             ::google::protobuf::Closure *done) override;
   void RelayEcho(::google::protobuf::RpcController *controller,
-             const ::echo::EchoRequest *request, ::echo::EchoResponse *response,
-             ::google::protobuf::Closure *done) override;
+                 const ::echo::EchoRequest *request,
+                 ::echo::EchoResponse *response,
+                 ::google::protobuf::Closure *done) override;
 
   void GetData(::google::protobuf::RpcController *controller,
                const ::echo::GetDataReq *request, ::echo::GetDataRsp *response,

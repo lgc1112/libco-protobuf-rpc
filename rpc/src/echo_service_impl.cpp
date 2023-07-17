@@ -1,19 +1,21 @@
 /*
  * @file:
- * @Author: regangcli
+ * @Author: ligengchao
  * @copyright: Tencent Technology (Shenzhen) Company Limited
  * @Date: 2023-06-21 15:47:04
- * @edit: regangcli
+ * @edit: ligengchao
  * @brief:
  */
 #include "echo_service_impl.h"
-#include "llbc.h"
 #include "conn_mgr.h"
+#include "llbc.h"
 #include "rpc_channel.h"
 #include "rpc_coro_mgr.h"
 using namespace llbc;
-void MyEchoService::Echo(::google::protobuf::RpcController * /* controller */, const ::echo::EchoRequest *request,
-                         ::echo::EchoResponse *response, ::google::protobuf::Closure *done) {
+void MyEchoService::Echo(::google::protobuf::RpcController * /* controller */,
+                         const ::echo::EchoRequest *request,
+                         ::echo::EchoResponse *response,
+                         ::google::protobuf::Closure *done) {
   LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "received, msg:%s",
        request->msg().c_str());
   //   LLBC_Sleep(5000); timeout test
@@ -21,9 +23,9 @@ void MyEchoService::Echo(::google::protobuf::RpcController * /* controller */, c
 }
 
 void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
-                          const ::echo::EchoRequest *req,
-                          ::echo::EchoResponse *rsp,
-                          ::google::protobuf::Closure *done) {
+                              const ::echo::EchoRequest *req,
+                              ::echo::EchoResponse *rsp,
+                              ::google::protobuf::Closure *done) {
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "RECEIVED MSG: %s",
        req->msg().c_str());
 
@@ -42,11 +44,11 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
   LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "call, msg:%s",
        innerReq.msg().c_str());
 
-    // 创建rpc controller & stub
-    RpcController cntl;
-    echo::EchoService_Stub stub(channel);
+  // 创建rpc controller & stub
+  RpcController cntl;
+  echo::EchoService_Stub stub(channel);
 
-    stub.Echo(&cntl, &innerReq, &innerRsp, nullptr);
+  stub.Echo(&cntl, &innerReq, &innerRsp, nullptr);
   LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Recv rsp, status:%s, rsp:%s",
        cntl.Failed() ? cntl.ErrorText().c_str() : "success",
        innerRsp.msg().c_str());

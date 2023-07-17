@@ -1,9 +1,9 @@
 /*
  * @file:
- * @Author: regangcli
+ * @Author: ligengchao
  * @copyright: Tencent Technology (Shenzhen) Company Limited
  * @Date: 2023-06-19 20:34:15
- * @edit: regangcli
+ * @edit: ligengchao
  * @brief:
  */
 #include "conn_mgr.h"
@@ -110,7 +110,7 @@ int ConnMgr::StartRpcService(const char *ip, int port) {
        ip, port);
   int serverSessionId_ = svc_->Listen(ip, port);
   if (serverSessionId_ == 0) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
          "Create session failed, reason: %s", LLBC_FormatLastError());
     return LLBC_FAILED;
   }
@@ -129,7 +129,7 @@ RpcChannel *ConnMgr::GetRpcChannel(const char *ip, int port) {
 
   auto sessionId = svc_->Connect(ip, port);
   if (sessionId == 0) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
          "Create session failed, reason: %s", LLBC_FormatLastError());
     return nullptr;
   }
@@ -144,7 +144,7 @@ RpcChannel *ConnMgr::GetRpcChannel(const char *ip, int port) {
 int ConnMgr::CloseSession(int sessionId) {
   auto it = session2Addr_.find(sessionId);
   if (it == session2Addr_.end()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
          "CloseSession, sessionId:%d not found", sessionId);
     return LLBC_FAILED;
   }
