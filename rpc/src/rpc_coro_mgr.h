@@ -29,6 +29,7 @@ public:
 public:
   RpcCoroMgr *GetCoroMgr() const { return coMgr_; }
 
+  // 获取协程ID
   int GetId() const { return coroId_; }
   stCoRoutine_t *GetInnerCoro() const { return innerCoro_; }
 
@@ -62,8 +63,11 @@ public:
   void SetPtrParam1(void *param) { ptrParam1 = param; }
 
 public:
+  // 挂起当前协程，指定超时时间
   int Yield(const llbc::LLBC_TimeSpan &timeout = llbc::LLBC_TimeSpan::zero);
+  // 恢复当前协程
   int Resume(const llbc::LLBC_Variant &passData = llbc::LLBC_Variant::nil);
+  // 取消当前协程
   int Cancel();
 
 public:
@@ -110,19 +114,31 @@ public:
   RpcCoroMgr();
   virtual ~RpcCoroMgr();
 
+  // 初始化/启动/停止
   bool Init();
+  bool Start();
   void Stop();
+
+  // 主协程定时调用，处理超时协程超时等逻辑
   void Update();
 
+  
+  // 创建协程
+  Coro *CreateCoro(const CoroEntry &entry, void *args, size_t stackSize = 0);
+  // 获取指定协程
   Coro *GetCoro(int coroId);
+  // 获取当前协程
   Coro *GetCurCoro();
+
+  // 获取当前协程ID
   int GetCurCoroId() { return GetCurCoro()->GetId(); };
 
-  Coro *CreateCoro(const CoroEntry &entry, void *args, size_t stackSize = 0);
-
-  int Yield(const llbc::LLBC_TimeSpan &timeout = llbc::LLBC_TimeSpan::zero);
+  // 恢复指定协程
   int Resume(int coroId,
              const llbc::LLBC_Variant &passData = llbc::LLBC_Variant::nil);
+  
+  // 挂起当前协程，指定超时时间
+  int Yield(const llbc::LLBC_TimeSpan &timeout = llbc::LLBC_TimeSpan::zero);
   int Cancel(int coroId);
 
   size_t GetCorosSize() const { return coros_.size(); }

@@ -22,7 +22,7 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
                             ::google::protobuf::Closure *) {
   response->Clear();
 
-  // 协程方案, 不允许在主协程中call Rpc
+  // 不允许在主协程中call Rpc
   auto coro = s_RpcCoroMgr->GetCurCoro();
   if (coro->IsMainCoro()) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
@@ -30,13 +30,13 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
     return;
   }
 
+  // 创建并编码发送包
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "CallMethod!");
   LLBC_Packet *sendPacket = LLBC_GetObjectFromUnsafetyPool<LLBC_Packet>();
   sendPacket->SetHeader(0, RpcOpCode::RpcReq, 0);
   sendPacket->SetSessionId(sessionId_);
   sendPacket->Write(method->service()->name());
   sendPacket->Write(method->name());
-
   sendPacket->Write(s_RpcCoroMgr->GetCurCoroId());
   sendPacket->Write(*request);
 
@@ -45,7 +45,7 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
 
   coro->Yield(); // yield当前协程，直到收到回包
 
-  // 协程被唤醒时，判断协程是否超时或者被取消
+  // 协程被唤醒时，判断协程是否超时或者被取消。如果是，则设置协程状态并返回
   if (coro->IsTimeouted()) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Coro %d timeouted",
          coro->GetId());
@@ -64,19 +64,20 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "PayLoad:%s",
        recvPacket->ToString().c_str());
 
+  // 读取包状态及rsp
   std::string errText;
   if (recvPacket->Read(errText) != LLBC_OK) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Read errText fail");
     controller->SetFailed("Read errText fail");
     return;
   }
-
   if (recvPacket->Read(*response) != LLBC_OK) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Read recvPacket fail");
     controller->SetFailed("Read recvPacket fail");
     return;
   }
 
+  // 填充错误信息，如有
   if (!errText.empty()) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Recv errText: %s",
          errText.c_str());

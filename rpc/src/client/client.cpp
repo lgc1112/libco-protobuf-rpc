@@ -2,7 +2,7 @@
  * @Author: ligengchao ligengchao@pku.edu.cn
  * @Date: 2023-07-16 14:27:21
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-07-17 22:17:47
+ * @LastEditTime: 2023-07-18 20:37:00
  * @FilePath: /projects/libco-protobuf-rpc/rpc/src/server/server.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -121,5 +121,3 @@ int main() {
 
   return 0;
 }
-
-/* vim: set ts=4 sw=4 sts=4 tw=100 */

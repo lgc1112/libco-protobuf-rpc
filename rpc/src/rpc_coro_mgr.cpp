@@ -291,6 +291,33 @@ int RpcCoroMgr::Cancel(int coroId) {
 bool RpcCoroMgr::Init() {
 
   // Log
+  // Start()
+  return true;
+}
+
+bool RpcCoroMgr::Start() {
+  // 初始化maxCoroId_
+  maxCoroId_ = 0;
+
+  // 获取libco主协程对象
+  auto mainInnerCoro = co_self();
+  if (!mainInnerCoro->cIsMain)
+  {
+    LLBC_SetLastError(LLBC_ERROR_INITED);
+    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Start failed, not main coro");
+    return false;
+  }
+
+  // 创建包装主协程对象
+  const auto coroId = GenCoroId();
+  auto mainCoro = new Coro(this, coroId, nullptr, nullptr, &timerScheduler_);
+  memcpy(&mainInnerCoro->aSpec[0].value, &coroId, sizeof(coroId));
+  mainCoro->SetInnerCoro(mainInnerCoro);
+
+  // 添加到协程集
+  coros_.emplace(coroId, mainCoro);
+
+  // Log
   LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Start");
 
   return true;
