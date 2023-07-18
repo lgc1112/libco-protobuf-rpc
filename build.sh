@@ -57,7 +57,7 @@ build_libco() {
 build_rpc() {
     echo "Building rpc"
     # gen pb
-    (cd $RPC_PATH/pb && $PROTOC_PATH  *.proto --cpp_out=. )
+    (cd $RPC_PATH/pb && $PROTOC_PATH  --proto_path=$PROTO_SRC_PATH --proto_path=. --cpp_out=. *.proto)
 
     mkdir -p ${BUILD_PATH} && cd ${BUILD_PATH}
     cmake -DCMAKE_BUILD_TYPE=Debug .. && make VERBOSE=1 -j15

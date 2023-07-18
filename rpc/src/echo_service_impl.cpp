@@ -1,7 +1,6 @@
 /*
  * @file:
  * @Author: ligengchao
-
  * @Date: 2023-06-21 15:47:04
  * @edit: ligengchao
  * @brief:
@@ -33,7 +32,7 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
   echo::EchoRequest innerReq;
   innerReq.set_msg("Relay Call >>>>>>" + req->msg());
   echo::EchoResponse innerRsp;
-  
+
   // 创建 or 获取 rpc channel
   RpcChannel *channel = s_ConnMgr->GetRpcChannel("127.0.0.1", 6688);
   if (!channel) {

@@ -30,6 +30,7 @@ void ConnComp::OnSessionCreate(const LLBC_SessionInfo &sessionInfo) {
 void ConnComp::OnSessionDestroy(const LLBC_SessionDestroyInfo &destroyInfo) {
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Session Destroy, info: %s",
        destroyInfo.ToString().c_str());
+  // Todo：此处为网络中断时，通信线程调用，需要将消息放入recvQueue_，由主线程处理
   s_ConnMgr->CloseSession(destroyInfo.GetSessionId());
 }
 

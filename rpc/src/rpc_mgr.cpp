@@ -11,6 +11,8 @@
 #include "llbc.h"
 #include "rpc_channel.h"
 #include "rpc_coro_mgr.h"
+#include <google/protobuf/descriptor.pb.h>
+#include "echo.pb.h"
 using namespace llbc;
 
 RpcMgr::RpcMgr(ConnMgr *connMgr) : connMgr_(connMgr) {
@@ -55,7 +57,7 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
        methodName.c_str());
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "srcCoroId:%d", srcCoroId);
 
-  // 解析req&创建rsp
+  // 解析req & 创建rsp
   auto req = service->GetRequestPrototype(md).New();
   if (packet.Read(*req) != LLBC_OK) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "read packet failed");
@@ -64,27 +66,56 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
   }
   auto rsp = service->GetResponsePrototype(md).New();
   auto sessionId = packet.GetSessionId();
-  
-  // 协程方案, 在新协程中处理rpc请求
+
+
+  bool isCoroRequired = md->options().GetExtension(echo::is_coro_required);
+  LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "recv method_name:%s, isCoroRequired:%d",
+       methodName.c_str(), isCoroRequired);
+  // 如果不需要协程，直接在当前协程中处理rpc请求并返回
+  if (!isCoroRequired)
+  {
+    RpcController controller;
+    // 调用CallMethod接口，CallMethod内部就会最终调用到用户重写的方法service方法，在用户重写的service方法中读取req，产生rsp
+    service->CallMethod(md, &controller, req, rsp, nullptr);
+    // 最后调用OnRpcDone回包
+    OnRpcDone(controller, rsp, sessionId, srcCoroId);
+    delete req;
+    delete rsp;
+    return;
+  }
+
+
+  //  需要协程处理，创建新协程处理rpc请求
   auto func = [packet, service, md, req, rsp, sessionId, srcCoroId, this](void *) {
     RpcController controller;
-    // 创建rpc完成回调函数
+    // 调用CallMethod接口，CallMethod内部就会最终调用到用户重写的方法service方法，在用户重写的service方法中读取req，产生rsp
     service->CallMethod(md, &controller, req, rsp, nullptr);
+    // 最后调用OnRpcDone回包
     OnRpcDone(controller, rsp, sessionId, srcCoroId);
     delete req;
     delete rsp;
   };
   Coro *coro = s_RpcCoroMgr->CreateCoro(func, nullptr);
+
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "SessionId:%d, srcCoroId:%d",
        packet.GetSessionId(), srcCoroId);
-  coro->Resume(); // 启动协程，如协程内部有内嵌发起rpc请求，会在协程内部发起请求后，直接回到此处
+  // 启动协程，如协程内部有内嵌发起rpc请求，会在协程内部发起请求后，直接回到此处
+  coro->Resume(); 
 }
 
 void RpcMgr::HandleRpcRsp(LLBC_Packet &packet) {
+  // 读取源协程Id
   int dstCoroId = 0;
-  packet.Read(dstCoroId);
+  if (packet.Read(dstCoroId)  != LLBC_OK)
+  {
+    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "read packet failed");
+    return;
+  }
+
   LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "dstCoroId:%d, packet:%s",
        dstCoroId, packet.ToString().c_str());
+
+  // 获取并恢复对应协程处理
   Coro *coro = s_RpcCoroMgr->GetCoro(dstCoroId);
   if (!coro) {
     LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "coro not found, coroId:%d",

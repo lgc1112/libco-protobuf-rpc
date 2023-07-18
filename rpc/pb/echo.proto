@@ -1,9 +1,14 @@
 syntax = "proto3";
 
+import "google/protobuf/descriptor.proto";
+
 package echo;
 
-
 option cc_generic_services = true;
+
+extend google.protobuf.MethodOptions {
+  optional bool is_coro_required = 50001;
+}
 
 message EchoRequest {
     optional string msg = 1;
@@ -23,6 +28,7 @@ message GetDataRsp {
 
 service EchoService {
     rpc Echo(EchoRequest) returns (EchoResponse);
-    rpc RelayEcho(EchoRequest) returns (EchoResponse);
+    rpc RelayEcho(EchoRequest) returns (EchoResponse) { option (is_coro_required) = true;}
     rpc GetData(GetDataReq) returns (GetDataRsp);
 }
+
