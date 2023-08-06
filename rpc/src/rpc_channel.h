@@ -14,6 +14,7 @@
 #include "google/protobuf/service.h"
 #include "google/protobuf/stubs/common.h"
 #include <google/protobuf/message.h>
+#include "rpc_def.h"
 class ConnMgr;
 
 class RpcController : public ::google::protobuf::RpcController {

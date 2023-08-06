@@ -13,7 +13,7 @@
 
 using namespace llbc;
 
-RpcChannel::~RpcChannel() { connMgr_->CloseSession(sessionId_); }
+RpcChannel::~RpcChannel() {}; // { connMgr_->CloseSession(sessionId_); }
 
 void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
                             ::google::protobuf::RpcController *controller,
@@ -25,13 +25,13 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
   // 不允许在主协程中call Rpc
   auto coro = s_RpcCoroMgr->GetCurCoro();
   if (coro->IsMainCoro()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Main coro not allow call Yield() method!");
     return;
   }
 
   // 创建并编码发送包
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "CallMethod!");
+  LOG_TRACE("CallMethod!");
   LLBC_Packet *sendPacket = LLBC_GetObjectFromUnsafetyPool<LLBC_Packet>();
   sendPacket->SetHeader(0, RpcOpCode::RpcReq, 0);
   sendPacket->SetSessionId(sessionId_);
@@ -41,18 +41,18 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
   sendPacket->Write(*request);
 
   connMgr_->PushPacket(sendPacket);
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Waiting!");
+  LOG_TRACE("Waiting!");
 
   coro->Yield(); // yield当前协程，直到收到回包
 
   // 协程被唤醒时，判断协程是否超时或者被取消。如果是，则设置协程状态并返回
   if (coro->IsTimeouted()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Coro %d timeouted",
+    LOG_ERROR("Coro %d timeouted",
          coro->GetId());
     controller->SetFailed("Coro timeouted");
     return;
   } else if (coro->IsCancelled()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Coro %d cancelled",
+    LOG_ERROR("Coro %d cancelled",
          coro->GetId());
     controller->SetFailed("Coro cancelled");
     return;
@@ -61,29 +61,29 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
   // 没有出错的情况，从协程获取接收到的回包
   LLBC_Packet *recvPacket =
       reinterpret_cast<LLBC_Packet *>(coro->GetPtrParam1());
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "PayLoad:%s",
+  LOG_TRACE("PayLoad:%s",
        recvPacket->ToString().c_str());
 
   // 读取包状态及rsp
   std::string errText;
   if (recvPacket->Read(errText) != LLBC_OK) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Read errText fail");
+    LOG_ERROR("Read errText fail");
     controller->SetFailed("Read errText fail");
     return;
   }
   if (recvPacket->Read(*response) != LLBC_OK) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Read recvPacket fail");
+    LOG_ERROR("Read recvPacket fail");
     controller->SetFailed("Read recvPacket fail");
     return;
   }
 
   // 填充错误信息，如有
   if (!errText.empty()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Recv errText: %s",
+    LOG_ERROR("Recv errText: %s",
          errText.c_str());
     controller->SetFailed(errText);
   }
 
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Recved: %s",
+  LOG_TRACE("Recved: %s",
        response->DebugString().c_str());
 }

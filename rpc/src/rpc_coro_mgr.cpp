@@ -50,7 +50,7 @@ Coro::~Coro() {
 
 int Coro::SetEntry(const CoroEntry &entry) {
   if (resumeTimes_ != 0) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Coro[%d] not allow set entry when coro already resumed[times:%lu]",
          coroId_, resumeTimes_);
     LLBC_SetLastError(LLBC_ERROR_NOT_ALLOW);
@@ -65,7 +65,7 @@ int Coro::SetEntry(const CoroEntry &entry) {
 
 int Coro::SetArgs(void *args) {
   if (resumeTimes_ != 0) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "CORO[%d] not allow set args when coro already resumed[times:%lu]",
          coroId_, resumeTimes_);
     LLBC_SetLastError(LLBC_ERROR_NOT_ALLOW);
@@ -81,7 +81,7 @@ int Coro::SetArgs(void *args) {
 int Coro::Yield(const LLBC_TimeSpan &timeout) {
   // 重复挂起检查
   if (IsYielded()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Coro[%d] already yielded",
+    LOG_ERROR("Coro[%d] already yielded",
          coroId_);
     LLBC_SetLastError(LLBC_ERROR_REPEAT);
 
@@ -90,7 +90,7 @@ int Coro::Yield(const LLBC_TimeSpan &timeout) {
 
   // 不允许挂起非当前协程
   if (this != coMgr_->GetCurCoro()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Not allow yield non-current coro, coro:%d, cur-coro:%d", coroId_,
          coMgr_->GetCurCoro()->coroId_);
     LLBC_SetLastError(LLBC_ERROR_NOT_ALLOW);
@@ -100,7 +100,7 @@ int Coro::Yield(const LLBC_TimeSpan &timeout) {
 
   // 不允许挂起main coro
   if (IsMainCoro()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Not allow yield main coro, coro:%d", coroId_);
     LLBC_SetLastError(LLBC_ERROR_NOT_ALLOW);
 
@@ -156,7 +156,7 @@ int Coro::Yield(const LLBC_TimeSpan &timeout) {
 int Coro::Resume(const LLBC_Variant &passData) {
   // 检查是否未挂起
   if (!IsYielded()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Coro %d not yield, resume failed", coroId_);
     LLBC_SetLastError(LLBC_ERROR_NOT_ALLOW);
     return LLBC_FAILED;
@@ -183,20 +183,20 @@ int Coro::Resume(const LLBC_Variant &passData) {
 
 int Coro::Cancel() {
   if (!IsYielded()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Coro %d not yield, cancel failed", coroId_);
     LLBC_SetLastError(LLBC_ERROR_NOT_ALLOW);
     return LLBC_FAILED;
   }
 
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Cancel coro %d", coroId_);
+  LOG_TRACE("Cancel coro %d", coroId_);
   timer_.Cancel();
 
   return 0;
 }
 
 void Coro::OnCoroTimeout(LLBC_Timer *timer) {
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Warn, "Coro %d timeout", coroId_);
+  LOG_WARN("Coro %d timeout", coroId_);
 
   timeouted_ = true;
   LLBC_SetLastError(LLBC_ERROR_TIMEOUTED);
@@ -207,7 +207,7 @@ void Coro::OnCoroTimeout(LLBC_Timer *timer) {
 
 void Coro::OnCoroCancel(LLBC_Timer *timer) {
   if (IsYielded() && !timer_.IsTimeouting()) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Coro %d cancel", coroId_);
+    LOG_TRACE("Coro %d cancel", coroId_);
 
     cancelled_ = true;
     LLBC_SetLastError(LLBC_ERROR_CANCELLED);
@@ -255,7 +255,7 @@ Coro *RpcCoroMgr::CreateCoro(const CoroEntry &entry, void *args,
 
   coros_.emplace(coroId, coro);
 
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Create coro %d", coroId);
+  LOG_TRACE("Create coro %d", coroId);
 
   return coro;
 }
@@ -267,7 +267,7 @@ int RpcCoroMgr::Yield(const LLBC_TimeSpan &timeout) {
 int RpcCoroMgr::Resume(int coroId, const LLBC_Variant &passData) {
   auto coro = GetCoro(coroId);
   if (!coro) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Coro %d not found, resume failed", coroId);
     LLBC_SetLastError(LLBC_ERROR_INVALID);
     return LLBC_FAILED;
@@ -279,7 +279,7 @@ int RpcCoroMgr::Resume(int coroId, const LLBC_Variant &passData) {
 int RpcCoroMgr::Cancel(int coroId) {
   auto coro = GetCoro(coroId);
   if (!coro) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Coro %d not found, cancel failed", coroId);
     LLBC_SetLastError(LLBC_ERROR_INVALID);
     return LLBC_FAILED;
@@ -304,7 +304,7 @@ bool RpcCoroMgr::Start() {
   if (!mainInnerCoro->cIsMain)
   {
     LLBC_SetLastError(LLBC_ERROR_INITED);
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error, "Start failed, not main coro");
+    LOG_ERROR("Start failed, not main coro");
     return false;
   }
 
@@ -318,13 +318,13 @@ bool RpcCoroMgr::Start() {
   coros_.emplace(coroId, mainCoro);
 
   // Log
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Start");
+  LOG_INFO("Start");
 
   return true;
 }
 
 void RpcCoroMgr::Stop() {
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Warn, "Stop");
+  LOG_WARN("Stop");
 
   // 取消所有挂起状态的coros
   for (auto it = coros_.begin(); it != coros_.end();) {
@@ -335,8 +335,8 @@ void RpcCoroMgr::Stop() {
 
   // 清理调度完的coros
   Update();
-  // 清理其他coros
-  LLBC_STLHelper::RecycleContainer(coros_, true);
+  // // 清理其他coros
+  // LLBC_STLHelper::RecycleContainer(coros_, true);
 
   // 重置maxCoroId_
   maxCoroId_ = 0;
@@ -367,13 +367,13 @@ int RpcCoroMgr::GenCoroId() {
 void RpcCoroMgr::MaskWillRecycle(Coro *coro) {
   if (!waitingForRecycleCoros_.insert(std::make_pair(coro->GetId(), coro))
            .second) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Error,
+    LOG_ERROR(
          "Repeated recycle coro, coroId:%d", coro->GetId());
     return;
   }
 
   coros_.erase(coro->GetId());
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Recycle coro, coroId:%d",
+  LOG_TRACE("Recycle coro, coroId:%d",
        coro->GetId());
 }
 

@@ -8,6 +8,7 @@
  */
 #pragma once
 #include "echo.pb.h"
+#include "rpc_def.h"
 
 class RpcController;
 class MyEchoService : public echo::EchoService {

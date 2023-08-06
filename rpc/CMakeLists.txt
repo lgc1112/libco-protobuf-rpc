@@ -24,7 +24,7 @@ link_directories(
 #     ../llbc/output/gmake/release64
 #     ./build)
 
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+# SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 file(GLOB PB_FILES "${CMAKE_CURRENT_SOURCE_DIR}/pb/*.cc")
 file(GLOB SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
@@ -36,6 +36,7 @@ add_executable(server ${PB_FILES} ${SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/s
 target_link_libraries(server libprotobuf.a libllbc.so libcolib.so)
 add_executable(server2 ${PB_FILES} ${SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/server/server2.cpp)
 target_link_libraries(server2 libprotobuf.a libllbc.so libcolib.so)
-# add_executable(server2 ${PB_FILES} ${SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/server/server2.cpp)
-# target_link_libraries(server2 libprotobuf.a libllbc.so libcolib.so)
 
+set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+add_executable(client_stress_test ${PB_FILES} ${SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/client/client_stress_test.cpp)
+target_link_libraries(client_stress_test libprotobuf.a  libllbc.so libcolib.so)

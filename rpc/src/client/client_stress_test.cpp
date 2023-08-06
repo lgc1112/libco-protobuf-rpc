@@ -2,7 +2,7 @@
  * @Author: ligengchao ligengchao@pku.edu.cn
  * @Date: 2023-07-16 14:27:21
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-08-06 18:54:59
+ * @LastEditTime: 2023-08-06 18:41:24
  * @FilePath: /projects/libco-protobuf-rpc/rpc/src/server/server.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -14,8 +14,10 @@
 #include "rpc_channel.h"
 #include "rpc_coro_mgr.h"
 #include "rpc_mgr.h"
+#include <climits>
 #include <csignal>
 #include <iostream>
+#include <sys/epoll.h>
 
 using namespace llbc;
 
@@ -76,27 +78,50 @@ int main() {
   LLBC_Defer(s_RpcCoroMgr->Stop());
   RpcMgr serviceMgr(s_ConnMgr);
 
+  long long beginTime = llbc::LLBC_GetMicroSeconds(), printTime = 0;
+  long long rpcCallCount = 0, failCount = 0, finishCount = 0;
+  long long rpcCallTimeSum = 0;
+  long long maxRpcCallTime = 0;
+  long long minRpcCallTime = LLONG_MAX;
+
+
   // 创建协程并Resume
-  auto func = [&cntl, &req, &rsp, &channel, &stub](void *) {
+  auto func = [&cntl, &req, &rsp, &channel, &stub, &failCount, &rpcCallCount, &printTime, &maxRpcCallTime, &minRpcCallTime, &rpcCallTimeSum](void *) {
+    
     req.set_msg("Hello, Echo.");
-    LOG_INFO("Rpc Echo Call, msg:%s",
-         req.msg().c_str());
+    long long beginRpcReqTime = llbc::LLBC_GetMicroSeconds();
     // 调用生成的rpc方法Echo,然后挂起协程等待返回
     stub.Echo(&cntl, &req, &rsp, nullptr);
-    LOG_INFO(
-         "Recv Echo Rsp, status:%s, rsp:%s",
-         cntl.Failed() ? cntl.ErrorText().c_str() : "success",
-         rsp.msg().c_str());
+    // LOG_INFO(
+    //      "Recv Echo Rsp, status:%s, rsp:%s",
+    //      cntl.Failed() ? cntl.ErrorText().c_str() : "success",
+    //      rsp.msg().c_str());
+    
+    long long endTime = llbc::LLBC_GetMicroSeconds();
+    long long tmpTime = endTime - beginRpcReqTime;
+    rpcCallTimeSum += tmpTime;
+    rpcCallCount++;
+    if (cntl.Failed()) {
+        ++failCount;
+    }
+    if (tmpTime > maxRpcCallTime)
+      maxRpcCallTime = tmpTime;
+    if (tmpTime < minRpcCallTime)
+      minRpcCallTime = tmpTime;
+      
+    if (endTime - printTime >= 1000000)
+    {
+      LOG_INFO("Rpc Statistic fin, Count:%lld, Fail Count:%lld, Total sum Time:%lld, Avg Time:%.2f, Max Time:%lld, Min Time:%lld",
+          rpcCallCount, failCount, rpcCallTimeSum, (double)rpcCallTimeSum / rpcCallCount, maxRpcCallTime, minRpcCallTime);
+      printTime = endTime;
+      rpcCallTimeSum = 0;
+      rpcCallCount = 0;
+      failCount = 0;
+      maxRpcCallTime = 0;
+      minRpcCallTime = LLONG_MAX;
+    }
 
-    req.set_msg("Hello, RelayEcho.");
-    LOG_INFO("Rpc RelayEcho Call, msg:%s",
-         req.msg().c_str());
-    // 调用生成的rpc方法RelayEcho,然后挂起协程等待返回
-    stub.RelayEcho(&cntl, &req, &rsp, nullptr);
-    LOG_INFO(
-         "Recv RelayEcho Rsp, status:%s, rsp:%s",
-         cntl.Failed() ? cntl.ErrorText().c_str() : "success",
-         rsp.msg().c_str());
+
   };
 
   // 主循环处理 rpc 请求
@@ -106,15 +131,21 @@ int main() {
     s_RpcCoroMgr->Update();
     // 更新连接管理器，处理接收到的rpc req和rsp
     auto isBusy = s_ConnMgr->Tick();
-    if (!isBusy) {
-      LLBC_Sleep(1);
-      ++count;
-      // 满1s就创建一个新协协程发rpc包
-      if (count == 1000) {
-        count = 0;
-        s_RpcCoroMgr->CreateCoro(func, nullptr)->Resume();
-      }
-    }
+    if (SendQueueSize / 3 - s_ConnMgr->GetSendQueueSize() >= 1)
+      s_RpcCoroMgr->CreateCoro(func, nullptr)->Resume();
+    // if (!isBusy) {
+    //   LLBC_Sleep(1);
+    //   ++count;
+    //   // 满1s就创建一个新协协程发rpc包
+    //   if (count == 10) {
+    //     count = 0;
+
+    //     for (int i = 0; i < 10; ++i){
+    //       if (SendQueueSize - s_ConnMgr->GetSendQueueSize() >= 10)
+    //         s_RpcCoroMgr->CreateCoro(func, nullptr)->Resume();
+    //     }
+    //   }
+    // }
   }
 
   LOG_TRACE("client Stop");

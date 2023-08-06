@@ -2,7 +2,7 @@
  * @Author: ligengchao ligengchao@pku.edu.cn
  * @Date: 2023-07-16 14:27:21
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-07-17 22:11:01
+ * @LastEditTime: 2023-08-05 17:47:20
  * @FilePath: /projects/libco-protobuf-rpc/rpc/src/server/server.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -43,7 +43,7 @@ int main() {
               << "path:" << logPath << std::endl;
     return -1;
   }
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "Hello Server!");
+  LOG_TRACE("Hello Server!");
 
   // 初始化连接管理器
   s_ConnMgr->Init();
@@ -70,7 +70,7 @@ int main() {
       LLBC_Sleep(1);
   }
 
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace, "server Stop");
+  LOG_TRACE("server Stop");
 
   return 0;
 }

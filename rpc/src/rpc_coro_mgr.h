@@ -11,6 +11,7 @@
 
 #include "llbc.h"
 #include <co_routine_inner.h>
+#include "rpc_def.h"
 
 class RpcCoroMgr;
 

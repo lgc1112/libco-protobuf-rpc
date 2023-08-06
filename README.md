@@ -58,13 +58,13 @@ In this case, the Echo method is mainly used to send RPC requests to the server 
   stub.Echo(cntl, req, rsp, nullptr);
   
   // 5. When the rsp packet is received or a timeout or other error occurs, the coroutine is awakened, and the rpc call status can be read from the proto controller. If the call is successful, the coroutine return value rsp can be read at this time, and the coroutine return result is printed
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Info,
+  LOG_INFO(
        "Recv Echo Rsp, status:%s, rsp:%s",
        cntl.Failed() ? cntl.ErrorText().c_str() : "success", rsp.msg().c_str());
 
   // 6. Perform RelayEcho call within the coroutine and get the return...
   stub.RelayEcho(cntl, req, rsp, nullptr);
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Info,
+  LOG_INFO(
        "Recv RelayEcho Rsp, status:%s, rsp:%s",
        cntl.Failed() ? cntl.ErrorText().c_str() : "success", rsp.msg().c_str());
 ```
@@ -117,7 +117,7 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
   echo::EchoService_Stub stub(channel);
 
   stub.Echo(cntl, innerReq, innerRsp, nullptr);
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Info, "Recv rsp, status:%s, rsp:%s",
+  LOG_INFO("Recv rsp, status:%s, rsp:%s",
        cntl.Failed() ? cntl.ErrorText().c_str() : "success",
        innerRsp.msg().c_str());
   if (cntl.Failed()) {
