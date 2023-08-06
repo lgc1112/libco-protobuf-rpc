@@ -15,7 +15,7 @@
 #include "echo.pb.h"
 using namespace llbc;
 
-#ifdef EnableRpcStat
+#ifdef EnableRpcPerfStat
 long long rpcCallCount = 0, printTime = 0, beginRpcReqTime = 0;
 long long rpcCallTimeSum = 0;
 long long maxRpcCallTime = 0;
@@ -47,7 +47,7 @@ void RpcMgr::AddService(google::protobuf::Service *service) {
 }
 
 void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
-#ifdef EnableRpcStat
+#ifdef EnableRpcPerfStat
   beginRpcReqTime = llbc::LLBC_GetMicroSeconds();
 #endif
 
@@ -155,7 +155,7 @@ void RpcMgr::OnRpcDone(RpcController &controller,
   // 回包
   connMgr_->PushPacket(packet);
 
-#ifdef EnableRpcStat
+#ifdef EnableRpcPerfStat
   long long endTime = llbc::LLBC_GetMicroSeconds();
   long long tmpTime = endTime - beginRpcReqTime;
   rpcCallTimeSum += tmpTime;

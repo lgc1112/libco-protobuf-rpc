@@ -2,7 +2,7 @@
  * @Author: ligengchao ligengchao@pku.edu.cn
  * @Date: 2023-07-16 14:27:21
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-08-06 18:41:24
+ * @LastEditTime: 2023-08-06 21:02:28
  * @FilePath: /projects/libco-protobuf-rpc/rpc/src/server/server.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -78,17 +78,17 @@ int main() {
   LLBC_Defer(s_RpcCoroMgr->Stop());
   RpcMgr serviceMgr(s_ConnMgr);
 
-  long long beginTime = llbc::LLBC_GetMicroSeconds(), printTime = 0;
+  long long printTime = 0;
   long long rpcCallCount = 0, failCount = 0, finishCount = 0;
   long long rpcCallTimeSum = 0;
   long long maxRpcCallTime = 0;
   long long minRpcCallTime = LLONG_MAX;
 
 
+  req.set_msg("Hello, Echo.");
   // 创建协程并Resume
   auto func = [&cntl, &req, &rsp, &channel, &stub, &failCount, &rpcCallCount, &printTime, &maxRpcCallTime, &minRpcCallTime, &rpcCallTimeSum](void *) {
     
-    req.set_msg("Hello, Echo.");
     long long beginRpcReqTime = llbc::LLBC_GetMicroSeconds();
     // 调用生成的rpc方法Echo,然后挂起协程等待返回
     stub.Echo(&cntl, &req, &rsp, nullptr);
@@ -131,8 +131,11 @@ int main() {
     s_RpcCoroMgr->Update();
     // 更新连接管理器，处理接收到的rpc req和rsp
     auto isBusy = s_ConnMgr->Tick();
-    if (SendQueueSize / 3 - s_ConnMgr->GetSendQueueSize() >= 1)
+    if (s_ConnMgr->GetSendQueueSize() < 1000)
       s_RpcCoroMgr->CreateCoro(func, nullptr)->Resume();
+    else
+        LLBC_Sleep(1);
+    
     // if (!isBusy) {
     //   LLBC_Sleep(1);
     //   ++count;

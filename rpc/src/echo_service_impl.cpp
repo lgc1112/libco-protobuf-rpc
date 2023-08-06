@@ -15,9 +15,11 @@ void MyEchoService::Echo(::google::protobuf::RpcController * /* controller */,
                          const ::echo::EchoRequest *request,
                          ::echo::EchoResponse *response,
                          ::google::protobuf::Closure *done) {
+#ifndef EnableRpcPerfStat 
   LOG_INFO("received, msg:%s", request->msg().c_str());
   //   LLBC_Sleep(5000); timeout test
   response->set_msg(std::string(" Echo >>>>>>> ") + request->msg());
+#endif
 }
 
 void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
