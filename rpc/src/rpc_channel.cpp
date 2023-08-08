@@ -13,7 +13,7 @@
 
 using namespace llbc;
 
-RpcChannel::~RpcChannel() {}; // { connMgr_->CloseSession(sessionId_); }
+RpcChannel::~RpcChannel(){}; // { connMgr_->CloseSession(sessionId_); }
 
 void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
                             ::google::protobuf::RpcController *controller,
@@ -25,8 +25,7 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
   // 不允许在主协程中call Rpc
   auto coro = s_RpcCoroMgr->GetCurCoro();
   if (coro->IsMainCoro()) {
-    LOG_ERROR(
-         "Main coro not allow call Yield() method!");
+    LOG_ERROR("Main coro not allow call Yield() method!");
     return;
   }
 
@@ -47,13 +46,11 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
 
   // 协程被唤醒时，判断协程是否超时或者被取消。如果是，则设置协程状态并返回
   if (coro->IsTimeouted()) {
-    LOG_ERROR("Coro %d timeouted",
-         coro->GetId());
+    LOG_ERROR("Coro %d timeouted", coro->GetId());
     controller->SetFailed("Coro timeouted");
     return;
   } else if (coro->IsCancelled()) {
-    LOG_ERROR("Coro %d cancelled",
-         coro->GetId());
+    LOG_ERROR("Coro %d cancelled", coro->GetId());
     controller->SetFailed("Coro cancelled");
     return;
   }
@@ -61,8 +58,7 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
   // 没有出错的情况，从协程获取接收到的回包
   LLBC_Packet *recvPacket =
       reinterpret_cast<LLBC_Packet *>(coro->GetPtrParam1());
-  LOG_TRACE("PayLoad:%s",
-       recvPacket->ToString().c_str());
+  LOG_TRACE("PayLoad:%s", recvPacket->ToString().c_str());
 
   // 读取包状态及rsp
   std::string errText;
@@ -79,11 +75,9 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor *method,
 
   // 填充错误信息，如有
   if (!errText.empty()) {
-    LOG_ERROR("Recv errText: %s",
-         errText.c_str());
+    LOG_ERROR("Recv errText: %s", errText.c_str());
     controller->SetFailed(errText);
   }
 
-  LOG_TRACE("Recved: %s",
-       response->DebugString().c_str());
+  LOG_TRACE("Recved: %s", response->DebugString().c_str());
 }

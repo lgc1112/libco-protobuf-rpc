@@ -10,8 +10,8 @@
 #pragma once
 
 #include "llbc.h"
-#include <co_routine_inner.h>
 #include "rpc_def.h"
+#include <co_routine_inner.h>
 
 class RpcCoroMgr;
 
@@ -123,7 +123,6 @@ public:
   // 主协程定时调用，处理超时协程超时等逻辑
   void Update();
 
-  
   // 创建协程
   Coro *CreateCoro(const CoroEntry &entry, void *args, size_t stackSize = 0);
   // 获取指定协程
@@ -137,7 +136,7 @@ public:
   // 恢复指定协程
   int Resume(int coroId,
              const llbc::LLBC_Variant &passData = llbc::LLBC_Variant::nil);
-  
+
   // 挂起当前协程，指定超时时间
   int Yield(const llbc::LLBC_TimeSpan &timeout = llbc::LLBC_TimeSpan::zero);
   int Cancel(int coroId);

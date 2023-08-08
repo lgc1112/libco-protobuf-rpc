@@ -15,7 +15,7 @@ void MyEchoService::Echo(::google::protobuf::RpcController * /* controller */,
                          const ::echo::EchoRequest *request,
                          ::echo::EchoResponse *response,
                          ::google::protobuf::Closure *done) {
-#ifndef EnableRpcPerfStat 
+#ifndef EnableRpcPerfStat
   LOG_INFO("received, msg:%s", request->msg().c_str());
   //   LLBC_Sleep(5000); timeout test
   response->set_msg(std::string(" Echo >>>>>>> ") + request->msg());
@@ -26,8 +26,7 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
                               const ::echo::EchoRequest *req,
                               ::echo::EchoResponse *rsp,
                               ::google::protobuf::Closure *done) {
-  LOG_TRACE("RECEIVED MSG: %s",
-       req->msg().c_str());
+  LOG_TRACE("RECEIVED MSG: %s", req->msg().c_str());
 
   // 初始化内部 rpc req & rsp
   echo::EchoRequest innerReq;
@@ -42,8 +41,7 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
     controller->SetFailed("GetRpcChannel Fail");
   }
 
-  LOG_INFO("call, msg:%s",
-       innerReq.msg().c_str());
+  LOG_INFO("call, msg:%s", innerReq.msg().c_str());
 
   // 创建rpc controller & stub
   RpcController cntl;
@@ -51,8 +49,8 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
 
   stub.Echo(&cntl, &innerReq, &innerRsp, nullptr);
   LOG_INFO("Recv rsp, status:%s, rsp:%s",
-       cntl.Failed() ? cntl.ErrorText().c_str() : "success",
-       innerRsp.msg().c_str());
+           cntl.Failed() ? cntl.ErrorText().c_str() : "success",
+           innerRsp.msg().c_str());
   if (cntl.Failed()) {
     controller->SetFailed(cntl.ErrorText());
   }

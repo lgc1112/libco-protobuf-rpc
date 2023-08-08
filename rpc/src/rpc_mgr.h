@@ -11,8 +11,8 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/service.h"
 #include "google/protobuf/stubs/common.h"
-#include <map>
 #include "rpc_def.h"
+#include <map>
 
 namespace llbc {
 class LLBC_Packet;
@@ -33,7 +33,8 @@ private:
   void HandleRpcReq(llbc::LLBC_Packet &packet);
   void HandleRpcRsp(llbc::LLBC_Packet &packet);
   // 处理RPC处理结束
-  void OnRpcDone(RpcController &controller, google::protobuf::Message *rsp, int sessionId, int srcCoroId);
+  void OnRpcDone(RpcController &controller, google::protobuf::Message *rsp,
+                 int sessionId, int srcCoroId);
 
 private:
   struct ServiceInfo {

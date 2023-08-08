@@ -23,42 +23,36 @@ void ConnComp::OnDestroy(bool &destroyFinished) {
 }
 
 void ConnComp::OnSessionCreate(const LLBC_SessionInfo &sessionInfo) {
-  LOG_TRACE("Session Create: %s",
-       sessionInfo.ToString().c_str());
+  LOG_TRACE("Session Create: %s", sessionInfo.ToString().c_str());
 }
 
 void ConnComp::OnSessionDestroy(const LLBC_SessionDestroyInfo &destroyInfo) {
-  LOG_TRACE("Session Destroy, info: %s",
-       destroyInfo.ToString().c_str());
+  LOG_TRACE("Session Destroy, info: %s", destroyInfo.ToString().c_str());
   // Todo：此处为网络中断时，通信线程调用，需要将消息放入recvQueue_，由主线程处理
   s_ConnMgr->CloseSession(destroyInfo.GetSessionId());
 }
 
 void ConnComp::OnAsyncConnResult(const LLBC_AsyncConnResult &result) {
-  LOG_TRACE("Async-Conn result: %s",
-       result.ToString().c_str());
+  LOG_TRACE("Async-Conn result: %s", result.ToString().c_str());
 }
 
 void ConnComp::OnUnHandledPacket(const LLBC_Packet &packet) {
-  LOG_TRACE(
-       "Unhandled packet, sessionId: %d, opcode: %d, payloadLen: %ld",
-       packet.GetSessionId(), packet.GetOpcode(), packet.GetPayloadLength());
+  LOG_TRACE("Unhandled packet, sessionId: %d, opcode: %d, payloadLen: %ld",
+            packet.GetSessionId(), packet.GetOpcode(),
+            packet.GetPayloadLength());
 }
 
 void ConnComp::OnProtoReport(const LLBC_ProtoReport &report) {
-  LOG_TRACE("Proto report: %s",
-       report.ToString().c_str());
+  LOG_TRACE("Proto report: %s", report.ToString().c_str());
 }
 
 void ConnComp::OnUpdate() {
   auto *sendPacket = sendQueue_.Pop();
   while (sendPacket) {
-    LOG_TRACE("sendPacket:%s",
-         sendPacket->ToString().c_str());
+    LOG_TRACE("sendPacket:%s", sendPacket->ToString().c_str());
     auto ret = GetService()->Send(sendPacket);
     if (ret != LLBC_OK) {
-      LOG_ERROR(
-           "Send packet failed, err: %s", LLBC_FormatLastError());
+      LOG_ERROR("Send packet failed, err: %s", LLBC_FormatLastError());
       LLBC_Recycle(sendPacket);
     }
 
@@ -68,8 +62,7 @@ void ConnComp::OnUpdate() {
 }
 
 void ConnComp::OnRecvPacket(LLBC_Packet &packet) {
-  LOG_TRACE("OnRecvPacket:%s",
-       packet.ToString().c_str());
+  LOG_TRACE("OnRecvPacket:%s", packet.ToString().c_str());
   LLBC_Packet *recvPacket = LLBC_GetObjectFromSafetyPool<LLBC_Packet>();
   recvPacket->SetHeader(packet, packet.GetOpcode(), 0);
   recvPacket->SetPayload(packet.DetachPayload());
@@ -96,9 +89,9 @@ ConnMgr::~ConnMgr() {
 int ConnMgr::Init() {
   // Create service
   svc_ = LLBC_Service::Create("SvcTest");
-  #ifdef EnableRpcPerfStat
-    svc_->SetFPS(1000); 
-  #endif
+#ifdef EnableRpcPerfStat
+  svc_->SetFPS(1000);
+#endif
   comp_ = new ConnComp;
   svc_->AddComponent(comp_);
   svc_->Subscribe(RpcOpCode::RpcReq, comp_, &ConnComp::OnRecvPacket);
@@ -111,12 +104,10 @@ int ConnMgr::Init() {
 
 int ConnMgr::StartRpcService(const char *ip, int port) {
   LOG_TRACE("ConnMgr StartRpcService");
-  LOG_TRACE("Server Will listening in %s:%d",
-       ip, port);
+  LOG_TRACE("Server Will listening in %s:%d", ip, port);
   int serverSessionId_ = svc_->Listen(ip, port);
   if (serverSessionId_ == 0) {
-    LOG_ERROR(
-         "Create session failed, reason: %s", LLBC_FormatLastError());
+    LOG_ERROR("Create session failed, reason: %s", LLBC_FormatLastError());
     return LLBC_FAILED;
   }
 
@@ -134,13 +125,11 @@ RpcChannel *ConnMgr::GetRpcChannel(const char *ip, int port) {
 
   auto sessionId = svc_->Connect(ip, port);
   if (sessionId == 0) {
-    LOG_ERROR(
-         "Create session failed, reason: %s", LLBC_FormatLastError());
+    LOG_ERROR("Create session failed, reason: %s", LLBC_FormatLastError());
     return nullptr;
   }
 
- LOG_TRACE(
-       "GetRpcChannel, sessionId:%d, addr:%s", sessionId, addr.c_str());
+  LOG_TRACE("GetRpcChannel, sessionId:%d, addr:%s", sessionId, addr.c_str());
   session2Addr_.emplace(sessionId, addr);
   return addr2Channel_.emplace(addr, new RpcChannel(this, sessionId))
       .first->second;
@@ -149,8 +138,7 @@ RpcChannel *ConnMgr::GetRpcChannel(const char *ip, int port) {
 int ConnMgr::CloseSession(int sessionId) {
   auto it = session2Addr_.find(sessionId);
   if (it == session2Addr_.end()) {
-    LOG_WARN(
-         "CloseSession, sessionId:%d not found", sessionId);
+    LOG_WARN("CloseSession, sessionId:%d not found", sessionId);
     return LLBC_FAILED;
   }
 
@@ -169,13 +157,9 @@ bool ConnMgr::Tick() {
     ret = true;
     LOG_TRACE("Tick");
     auto it = packetDelegs_.find(packet->GetOpcode());
-    if (it == packetDelegs_.end())
-    {
-      LOG_WARN("Recv Untapped opcode:%d",
-           packet->GetOpcode());
-    }
-    else
-    {
+    if (it == packetDelegs_.end()) {
+      LOG_WARN("Recv Untapped opcode:%d", packet->GetOpcode());
+    } else {
       (it->second)(*packet);
     }
 
