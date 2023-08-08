@@ -8,11 +8,11 @@
  */
 #include "rpc_mgr.h"
 #include "conn_mgr.h"
+#include "echo.pb.h"
 #include "llbc.h"
 #include "rpc_channel.h"
 #include "rpc_coro_mgr.h"
 #include <google/protobuf/descriptor.pb.h>
-#include "echo.pb.h"
 using namespace llbc;
 
 #ifdef EnableRpcPerfStat
@@ -62,10 +62,8 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
 
   auto service = _services[serviceName].service;
   auto md = _services[serviceName].mds[methodName];
-  LOG_TRACE("recv service_name:%s",
-       serviceName.c_str());
-  LOG_TRACE("recv method_name:%s",
-       methodName.c_str());
+  LOG_TRACE("recv service_name:%s", serviceName.c_str());
+  LOG_TRACE("recv method_name:%s", methodName.c_str());
   LOG_TRACE("srcCoroId:%d", srcCoroId);
 
   // 解析req & 创建rsp
@@ -78,26 +76,49 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
   auto rsp = service->GetResponsePrototype(md).New();
   auto sessionId = packet.GetSessionId();
 
-
   bool isCoroRequired = md->options().GetExtension(echo::is_coro_required);
   // LOG_INFO("recv method_name:%s, isCoroRequired:%d",
   //      methodName.c_str(), isCoroRequired);
   // 如果不需要协程，直接在当前协程中处理rpc请求并返回
-  if (!isCoroRequired)
-  {
+  if (!isCoroRequired) {
     RpcController controller;
     // 调用CallMethod接口，CallMethod内部就会最终调用到用户重写的方法service方法，在用户重写的service方法中读取req，产生rsp
     service->CallMethod(md, &controller, req, rsp, nullptr);
     // 最后调用OnRpcDone回包
     OnRpcDone(controller, rsp, sessionId, srcCoroId);
+
+#ifdef EnableRpcPerfStat
+    long long endTime = llbc::LLBC_GetMicroSeconds();
+    long long tmpTime = endTime - beginRpcReqTime;
+    rpcCallTimeSum += tmpTime;
+    rpcCallCount++;
+    if (tmpTime > maxRpcCallTime)
+      maxRpcCallTime = tmpTime;
+    if (tmpTime < minRpcCallTime)
+      minRpcCallTime = tmpTime;
+
+    if (endTime - printTime >= 1000000) {
+      LOG_INFO("Rpc Statistic fin, Count:%lld, Total sum Time:%lld, Avg "
+               "Time:%.2f, Max Time:%lld, Min Time:%lld",
+               rpcCallCount, rpcCallTimeSum,
+               (double)rpcCallTimeSum / rpcCallCount, maxRpcCallTime,
+               minRpcCallTime);
+      printTime = endTime;
+      rpcCallTimeSum = 0;
+      rpcCallCount = 0;
+      maxRpcCallTime = 0;
+      minRpcCallTime = LLONG_MAX;
+    }
+#endif
+
     delete req;
     delete rsp;
     return;
   }
 
-
   //  需要协程处理，创建新协程处理rpc请求
-  auto func = [&packet, service, md, req, rsp, sessionId, srcCoroId, this](void *) {
+  auto func = [&packet, service, md, req, rsp, sessionId, srcCoroId,
+               this](void *) {
     RpcController controller;
     // 调用CallMethod接口，CallMethod内部就会最终调用到用户重写的方法service方法，在用户重写的service方法中读取req，产生rsp
     service->CallMethod(md, &controller, req, rsp, nullptr);
@@ -108,52 +129,9 @@ void RpcMgr::HandleRpcReq(LLBC_Packet &packet) {
   };
   Coro *coro = s_RpcCoroMgr->CreateCoro(func, nullptr);
 
-  LOG_TRACE("SessionId:%d, srcCoroId:%d",
-       packet.GetSessionId(), srcCoroId);
+  LOG_TRACE("SessionId:%d, srcCoroId:%d", packet.GetSessionId(), srcCoroId);
   // 启动协程，如协程内部有内嵌发起rpc请求，会在协程内部发起请求后，直接回到此处
-  coro->Resume(); 
-}
-
-void RpcMgr::HandleRpcRsp(LLBC_Packet &packet) {
-  // 读取源协程Id
-  int dstCoroId = 0;
-  if (packet.Read(dstCoroId)  != LLBC_OK)
-  {
-    LOG_ERROR("read packet failed");
-    return;
-  }
-
-  LOG_TRACE("dstCoroId:%d, packet:%s",
-       dstCoroId, packet.ToString().c_str());
-
-  // 获取并恢复对应协程处理
-  Coro *coro = s_RpcCoroMgr->GetCoro(dstCoroId);
-  if (!coro) {
-    LOG_ERROR("coro not found, coroId:%d",
-         dstCoroId);
-  } else {
-    coro->SetPtrParam1(&packet);
-    coro->Resume();
-  }
-}
-
-void RpcMgr::OnRpcDone(RpcController &controller,
-                       google::protobuf::Message *rsp, int sessionId, int srcCoroId) {
-  LOG_TRACE("OnRpcDone, rsp:%s",
-       rsp->DebugString().c_str());
-
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
-       "coroSessionId:%d, srcCoroId:%d", sessionId, srcCoroId);
-  auto packet = LLBC_GetObjectFromUnsafetyPool<LLBC_Packet>();
-  packet->SetSessionId(sessionId);
-  packet->SetOpcode(RpcOpCode::RpcRsp);
-  packet->Write(srcCoroId);
-  packet->Write(controller.ErrorText());
-  packet->Write(*rsp);
-  LOG_TRACE("rsp packet:%s",
-       packet->ToString().c_str());
-  // 回包
-  connMgr_->PushPacket(packet);
+  coro->Resume();
 
 #ifdef EnableRpcPerfStat
   long long endTime = llbc::LLBC_GetMicroSeconds();
@@ -164,11 +142,13 @@ void RpcMgr::OnRpcDone(RpcController &controller,
     maxRpcCallTime = tmpTime;
   if (tmpTime < minRpcCallTime)
     minRpcCallTime = tmpTime;
-    
-  if (endTime - printTime >= 1000000)
-  {
-    LOG_INFO("Rpc Statistic fin, Count:%lld, Total sum Time:%lld, Avg Time:%.2f, Max Time:%lld, Min Time:%lld",
-        rpcCallCount, rpcCallTimeSum, (double)rpcCallTimeSum / rpcCallCount, maxRpcCallTime, minRpcCallTime);
+
+  if (endTime - printTime >= 1000000) {
+    LOG_INFO("Rpc Statistic fin, Count:%lld, Total sum Time:%lld, Avg "
+             "Time:%.2f, Max Time:%lld, Min Time:%lld",
+             rpcCallCount, rpcCallTimeSum,
+             (double)rpcCallTimeSum / rpcCallCount, maxRpcCallTime,
+             minRpcCallTime);
     printTime = endTime;
     rpcCallTimeSum = 0;
     rpcCallCount = 0;
@@ -176,4 +156,41 @@ void RpcMgr::OnRpcDone(RpcController &controller,
     minRpcCallTime = LLONG_MAX;
   }
 #endif
+}
+
+void RpcMgr::HandleRpcRsp(LLBC_Packet &packet) {
+  // 读取源协程Id
+  int dstCoroId = 0;
+  if (packet.Read(dstCoroId) != LLBC_OK) {
+    LOG_ERROR("read packet failed");
+    return;
+  }
+
+  LOG_TRACE("dstCoroId:%d, packet:%s", dstCoroId, packet.ToString().c_str());
+
+  // 获取并恢复对应协程处理
+  Coro *coro = s_RpcCoroMgr->GetCoro(dstCoroId);
+  if (!coro) {
+    LOG_ERROR("coro not found, coroId:%d", dstCoroId);
+  } else {
+    coro->SetPtrParam1(&packet);
+    coro->Resume();
+  }
+}
+
+void RpcMgr::OnRpcDone(RpcController &controller,
+                       google::protobuf::Message *rsp, int sessionId,
+                       int srcCoroId) {
+  LOG_TRACE("OnRpcDone, rsp:%s", rsp->DebugString().c_str());
+
+  LOG_TRACE("coroSessionId:%d, srcCoroId:%d", sessionId, srcCoroId);
+  auto packet = LLBC_GetObjectFromSafetyPool<LLBC_Packet>();
+  packet->SetSessionId(sessionId);
+  packet->SetOpcode(RpcOpCode::RpcRsp);
+  packet->Write(srcCoroId);
+  packet->Write(controller.ErrorText());
+  packet->Write(*rsp);
+  LOG_TRACE("rsp packet:%s", packet->ToString().c_str());
+  // 回包
+  connMgr_->PushPacket(packet);
 }

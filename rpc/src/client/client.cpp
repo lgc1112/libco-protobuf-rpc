@@ -2,7 +2,7 @@
  * @Author: ligengchao ligengchao@pku.edu.cn
  * @Date: 2023-07-16 14:27:21
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-08-06 18:54:59
+ * @LastEditTime: 2023-08-08 16:46:05
  * @FilePath: /projects/libco-protobuf-rpc/rpc/src/server/server.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -48,8 +48,7 @@ int main() {
   // 初始化连接管理器
   ret = s_ConnMgr->Init();
   if (ret != LLBC_OK) {
-    LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
-         "Initialize connMgr failed, error:%s", LLBC_FormatLastError());
+    LOG_TRACE("Initialize connMgr failed, error:%s", LLBC_FormatLastError());
     return -1;
   }
 
@@ -79,24 +78,20 @@ int main() {
   // 创建协程并Resume
   auto func = [&cntl, &req, &rsp, &channel, &stub](void *) {
     req.set_msg("Hello, Echo.");
-    LOG_INFO("Rpc Echo Call, msg:%s",
-         req.msg().c_str());
+    LOG_INFO("Rpc Echo Call, msg:%s", req.msg().c_str());
     // 调用生成的rpc方法Echo,然后挂起协程等待返回
     stub.Echo(&cntl, &req, &rsp, nullptr);
-    LOG_INFO(
-         "Recv Echo Rsp, status:%s, rsp:%s",
-         cntl.Failed() ? cntl.ErrorText().c_str() : "success",
-         rsp.msg().c_str());
+    LOG_INFO("Recv Echo Rsp, status:%s, rsp:%s",
+             cntl.Failed() ? cntl.ErrorText().c_str() : "success",
+             rsp.msg().c_str());
 
     req.set_msg("Hello, RelayEcho.");
-    LOG_INFO("Rpc RelayEcho Call, msg:%s",
-         req.msg().c_str());
+    LOG_INFO("Rpc RelayEcho Call, msg:%s", req.msg().c_str());
     // 调用生成的rpc方法RelayEcho,然后挂起协程等待返回
     stub.RelayEcho(&cntl, &req, &rsp, nullptr);
-    LOG_INFO(
-         "Recv RelayEcho Rsp, status:%s, rsp:%s",
-         cntl.Failed() ? cntl.ErrorText().c_str() : "success",
-         rsp.msg().c_str());
+    LOG_INFO("Recv RelayEcho Rsp, status:%s, rsp:%s",
+             cntl.Failed() ? cntl.ErrorText().c_str() : "success",
+             rsp.msg().c_str());
   };
 
   // 主循环处理 rpc 请求

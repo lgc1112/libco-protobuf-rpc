@@ -35,7 +35,7 @@ Coro::Coro(RpcCoroMgr *coMgr, int coroId, const CoroEntry &entry, void *args,
 }
 
 Coro::~Coro() {
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+  LOG_TRACE(
        "Delete coro, id:%d, scheduleFlag:[yielded:%s, timeouted:%s, "
        "cancelled:%s], times[yield:%lu, resume:%lu]",
        coroId_, yielded_ ? "true" : "false", timeouted_ ? "true" : "false",
@@ -115,7 +115,7 @@ int Coro::Yield(const LLBC_TimeSpan &timeout) {
 
   // 自增yield次数 并 Log
   ++yieldTimes_;
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+  LOG_TRACE(
        "Yield coro:%d, yield times:%lu, timeout:%d.%03d secs", coroId_,
        yieldTimes_, actualTimeout.GetTotalSeconds(),
        actualTimeout.GetMilliSeconds());
@@ -137,9 +137,7 @@ int Coro::Yield(const LLBC_TimeSpan &timeout) {
   ASSERT(yielded_ == false && "Coro internal error");
   // 计算Cost Time 并 Log
   const LLBC_CPUTime costTime(LLBC_RdTsc() - begYieldTime);
-  const auto logLv =
-      IsTimeoutedOrCancelled() ? LLBC_LogLevel::Warn : LLBC_LogLevel::Trace;
-  LLOG(nullptr, nullptr, logLv,
+  LOG_TRACE(
        "Yield end, coro:%d, timeouted?:%s, cancelled?:%s, cost:%lld.%03lld us",
        coroId_, IsTimeouted() ? "true" : "false",
        IsCancelled() ? "true" : "false", costTime.ToMicroSeconds(),
@@ -164,7 +162,7 @@ int Coro::Resume(const LLBC_Variant &passData) {
 
   // 自增resume次数 并 Log
   ++resumeTimes_;
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+  LOG_TRACE(
        "Resume coro %d, resume times:%lu", coroId_, resumeTimes_);
 
   // 重置 挂起标记
@@ -348,7 +346,7 @@ void RpcCoroMgr::Update() {
   if (waitingForRecycleCoros_.empty())
     return;
 
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+  LOG_TRACE(
        "Delete all waiting for release coros, size:%lu",
        waitingForRecycleCoros_.size());
   LLBC_STLHelper::RecycleContainer(waitingForRecycleCoros_);

@@ -40,7 +40,7 @@ void ConnComp::OnAsyncConnResult(const LLBC_AsyncConnResult &result) {
 }
 
 void ConnComp::OnUnHandledPacket(const LLBC_Packet &packet) {
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+  LOG_TRACE(
        "Unhandled packet, sessionId: %d, opcode: %d, payloadLen: %ld",
        packet.GetSessionId(), packet.GetOpcode(), packet.GetPayloadLength());
 }
@@ -70,7 +70,7 @@ void ConnComp::OnUpdate() {
 void ConnComp::OnRecvPacket(LLBC_Packet &packet) {
   LOG_TRACE("OnRecvPacket:%s",
        packet.ToString().c_str());
-  LLBC_Packet *recvPacket = LLBC_GetObjectFromUnsafetyPool<LLBC_Packet>();
+  LLBC_Packet *recvPacket = LLBC_GetObjectFromSafetyPool<LLBC_Packet>();
   recvPacket->SetHeader(packet, packet.GetOpcode(), 0);
   recvPacket->SetPayload(packet.DetachPayload());
   recvQueue_.Push(recvPacket);
@@ -96,6 +96,9 @@ ConnMgr::~ConnMgr() {
 int ConnMgr::Init() {
   // Create service
   svc_ = LLBC_Service::Create("SvcTest");
+  #ifdef EnableRpcPerfStat
+    svc_->SetFPS(1000); 
+  #endif
   comp_ = new ConnComp;
   svc_->AddComponent(comp_);
   svc_->Subscribe(RpcOpCode::RpcReq, comp_, &ConnComp::OnRecvPacket);
@@ -136,7 +139,7 @@ RpcChannel *ConnMgr::GetRpcChannel(const char *ip, int port) {
     return nullptr;
   }
 
-  LLOG(nullptr, nullptr, LLBC_LogLevel::Trace,
+ LOG_TRACE(
        "GetRpcChannel, sessionId:%d, addr:%s", sessionId, addr.c_str());
   session2Addr_.emplace(sessionId, addr);
   return addr2Channel_.emplace(addr, new RpcChannel(this, sessionId))
