@@ -201,8 +201,8 @@ Server-side measurement results:
 
 |Test Function | No Coroutine | 	Coroutine |
 | --- | --- | --- |
-| Average processing time per RPC on the server-sid| 3.33us	|5.68 us|
-| Actual QPS|218,800 (3 clients, 99% CPU)|125,000 (2 clients, 99% CPU)|
+| Average processing time per RPC| 3.33us	|5.68 us|
+| QPS|218,800 (3 clients, 99% CPU)|125,000 (2 clients, 99% CPU)|
 
 Based on the above test results, the switching execution time of libco stackful coroutines is 2.09us. When not using coroutines to process RPC, the QPS is 218,800, and the theoretical maximum QPS can reach 1/3.33us = 300,000. When using coroutines to process RPC, the QPS is 125,000, and the theoretical maximum QPS is 176,000. When the sleep time of the client and server is changed to 0, the average latency of the same machine Rpc call is about 1ms, and the minimum latency is 50us.
 
@@ -210,8 +210,8 @@ In addition, I have also implemented an RPC framework based on stackless corouti
 
 |Test Function | No Coroutine | 	Coroutine |
 | --- | --- | --- |
-| Average processing time per RPC on the server-sid| 3.36us	|3.38 us|
-| Actual QPS|216,000 (2 clients, 99% CPU)|213,800 (2 clients, 99% CPU)|
+| Average processing time per RPC| 3.36us	|3.38 us|
+|QPS|216,000 (2 clients, 99% CPU)|213,800 (2 clients, 99% CPU)|
 
 From the above results, it can be seen that when not using coroutines to process RPC, there is not much difference in the RPC processing time and QPS between the two coroutine frameworks. However, since the switching time of stackful coroutines is about 700 times that of stackless coroutines, when using coroutines to process RPC, the QPS of the stackful coroutine solution is 40% lower than that of the stackless coroutine solution. But the advantage of the stackful coroutine solution is its higher usability.
 
