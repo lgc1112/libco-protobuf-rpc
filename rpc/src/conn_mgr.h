@@ -1,7 +1,6 @@
 /*
  * @file:
  * @Author: ligengchao
-
  * @Date: 2023-06-19 20:39:04
  * @edit: ligengchao
  * @brief:
@@ -11,6 +10,7 @@
 
 #include "llbc.h"
 #include "rpc_def.h"
+#include <csignal>
 using namespace llbc;
 
 class RpcChannel;
@@ -144,7 +144,7 @@ public:
   int CloseSession(int sessionId);
   // 放入发送包
   int PushPacket(LLBC_Packet *sendPacket) {
-    return comp_->PushPacket(sendPacket);
+    return svc_->Send(sendPacket);
   }
   // 获取发送队列大小
   int GetSendQueueSize() { return comp_->GetSendQueueSize(); }
@@ -156,6 +156,7 @@ public:
   bool IsServer() { return isServer_; }
   // 更新处理收到的Rpc数据包，需要主线程定时Tick
   bool Tick();
+  int Start();
   // 订阅指定cmdId的数据包处理回调
   int Subscribe(int cmdId, const LLBC_Delegate<void(LLBC_Packet &)> &deleg);
   // 取消订阅cmdId的数据包

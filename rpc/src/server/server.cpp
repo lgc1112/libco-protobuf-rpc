@@ -2,7 +2,7 @@
  * @Author: ligengchao ligengchao@pku.edu.cn
  * @Date: 2023-07-16 14:27:21
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-08-08 16:46:06
+ * @LastEditTime: 2023-08-09 14:57:51
  * @FilePath: /projects/libco-protobuf-rpc/rpc/src/server/server.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -47,6 +47,8 @@ int main() {
 
   // 初始化连接管理器
   s_ConnMgr->Init();
+  RpcMgr serviceMgr(s_ConnMgr);
+  ret = s_ConnMgr->Start();
 
   // 启动rpc监听服务
   if (s_ConnMgr->StartRpcService("127.0.0.1", 6688) != LLBC_OK) {
@@ -55,7 +57,6 @@ int main() {
   }
 
   // 添加rpc服务
-  RpcMgr serviceMgr(s_ConnMgr);
   MyEchoService echoService;
   serviceMgr.AddService(&echoService);
 

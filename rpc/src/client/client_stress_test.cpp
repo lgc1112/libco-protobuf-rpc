@@ -2,7 +2,7 @@
  * @Author: ligengchao ligengchao@pku.edu.cn
  * @Date: 2023-07-16 14:27:21
  * @LastEditors: Please set LastEditors
- * @LastEditTime: 2023-08-08 16:46:04
+ * @LastEditTime: 2023-08-09 15:10:22
  * @FilePath: /projects/libco-protobuf-rpc/rpc/src/server/server.cpp
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置
  * 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -79,7 +79,9 @@ int main() {
   }
 
   // 初始化连接管理器
-  ret = s_ConnMgr->Init();
+  s_ConnMgr->Init();
+  RpcMgr serviceMgr(s_ConnMgr);
+  ret = s_ConnMgr->Start();
   if (ret != LLBC_OK) {
     LOG_TRACE("Initialize connMgr failed, error:%s", LLBC_FormatLastError());
     return -1;
@@ -106,7 +108,6 @@ int main() {
 
   s_RpcCoroMgr->Init();
   LLBC_Defer(s_RpcCoroMgr->Stop());
-  RpcMgr serviceMgr(s_ConnMgr);
 
   long long printTime = 0;
   long long rpcCallCount = 0, failCount = 0, finishCount = 0;
@@ -161,7 +162,7 @@ int main() {
     s_RpcCoroMgr->Update();
     // 更新连接管理器，处理接收到的rpc req和rsp
     auto isBusy = s_ConnMgr->Tick();
-    if (s_ConnMgr->GetSendQueueSize() < 100)
+    if (s_RpcCoroMgr->GetCorosSize() < 200)
       s_RpcCoroMgr->CreateCoro(func, nullptr)->Resume();
     else
       LLBC_Sleep(1);

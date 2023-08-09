@@ -34,11 +34,12 @@ void MyEchoService::RelayEcho(::google::protobuf::RpcController *controller,
   echo::EchoResponse innerRsp;
 
   // 创建 or 获取 rpc channel
-  RpcChannel *channel = s_ConnMgr->GetRpcChannel("127.0.0.1", 6688);
+  RpcChannel *channel = s_ConnMgr->GetRpcChannel("127.0.0.1", 6699);
   if (!channel) {
     LOG_INFO("GetRpcChannel Fail");
     rsp->set_msg(req->msg() + " ---- inner rpc call server not exist");
     controller->SetFailed("GetRpcChannel Fail");
+    return;
   }
 
   LOG_INFO("call, msg:%s", innerReq.msg().c_str());
